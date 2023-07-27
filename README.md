@@ -2,7 +2,7 @@
 
 *Disclaimer: I am not an Audiokinetic employee and I don't claim to represent them or their products in any official capacity.*
 
-This repository contains ongoing efforts to develop a complete set of WASM bindings to utilize Wwise's Web platform in a pure-JS environemnt.
+This repository contains ongoing efforts to develop a complete set of WASM bindings to utilize Wwise's SDK on the web in a pure-JS environemnt.
 
 Everything in here is very much WIP and subject to change.
 
@@ -15,7 +15,7 @@ Everything in here is very much WIP and subject to change.
 
 ### Obtaining SDK files for Web Platform
 
-This repo requires a bit of additional setup before being able to build the `wwise.js`/`wwise.wasm` files. Given that Wwise's Web Platform is still under a technical preview, the necessary SDK files are not immediately accessible from Audiokinetic's website. You will need to follow these steps laid out by [Mike Drummelsmith](mailto:mdrummelsmith@audiokinetic.com) (Head of Licensing at Audiokinetic):
+This repo requires a bit of additional setup before being able to build the `wwise.js`/`wwise.wasm` files. Given that Wwise's Web Platform is still behind a technical preview, the necessary SDK files are not immediately accessible from Audiokinetic's website. You will need to follow these steps laid out by [Mike Drummelsmith](mailto:mdrummelsmith@audiokinetic.com) (Head of Licensing at Audiokinetic):
   > First, register a non-commercial project in our system called something like 'XR Web Experiments' or similar.  Visit the website, and under the Get Started menu, click 'Register my Project'.  Then, choose 'Non-Commercial' and 'more than 200 sounds' then fill out the form.  That'll come to us for approval, and once you have been approved, you'll have a trial license to cover your project's needs.
   >
   > Be sure to mark in the Description that you need web platform access.
