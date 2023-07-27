@@ -2,7 +2,7 @@
 
 *Disclaimer: I am not an Audiokinetic employee and I don't claim to represent them or their products in any official capacity.*
 
-This repository contains ongoing efforts to develop a complete set of WASM bindings to utilize Wwise's SDK on the web in a pure-JS environemnt.
+This repository contains ongoing efforts to develop a complete set of WASM bindings to utilize Wwise's SDK on the web in a pure-JS environment.
 
 Everything in here is very much WIP and subject to change.
 
@@ -22,7 +22,7 @@ This repo requires a bit of additional setup before being able to build the `wwi
   >
   > Once that's done (you'll receive a notification when it's approved), grab that key, and from the Launcher you should be able to install the web platform and other required components (SDK and offline documentation).  Then, you should be able to find the instructions for getting set up in the docs.  Look in the SDK docs, under the Web-specific info.  It's all shown in the Wwise Up On Air video from a little while back (you'll have to edit a .wsettings file in order to expose the platform in Wwise itself).
 
-Important to note here is that the included Integration Demo with the SDK is *not* functioning in versions of Wwise newer than 2022.1.3. While I haven't tested too thoroughly I've opted to build with the versions of the files that produce a working version of the Integration Demo for Web, so **I would suggest you use Wwise 2022.1.3**. From limited testing the 2023 builds also seem to have issues.
+Important to note here is that the included Integration Demo with the SDK is currently *not* functioning in versions of Wwise newer than 2022.1.3. While I haven't tested too thoroughly I've opted to build with the versions of the files that produce a working version of the Integration Demo for Web, so **I would suggest you use Wwise 2022.1.3**. From limited testing the 2023 builds also seem to have issues.
 
 ### Folder structures
 
