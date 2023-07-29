@@ -128,6 +128,11 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .value("Speakers", AkPanningRule_Speakers)
     .value("Headphones", AkPanningRule_Headphones)
   ;
+  enum_<AkSetPositionFlags>("AkSetPositionFlags")
+    .value("Emitter", AkSetPositionFlags_Emitter)
+    .value("Listener", AkSetPositionFlags_Listener)
+    .value("Default", AkSetPositionFlags_Default)
+  ;
 
   // Structs
   class_<AkAudioSettings>("AkAudioSettings")
@@ -176,6 +181,34 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .property("fBarDuration", &AkSegmentInfo::fBarDuration)
     .property("fGridDuration", &AkSegmentInfo::fGridDuration)
     .property("fGridOffset", &AkSegmentInfo::fGridOffset)
+  ;
+  class_<AkTransform>("AkTransform")
+    .constructor()
+    .property("Position", &AkTransform::Position, select_overload<void(const AkVector&)>(&AkTransform::SetPosition))
+    .property("OrientationFront", &AkTransform::OrientationFront)
+    .property("OrientationTop", &AkTransform::OrientationTop)
+    .function("SetOrientation", select_overload<void(const AkVector&, const AkVector&)>(&AkTransform::SetOrientation))
+    .function("Set", select_overload<void(const AkVector&, const AkVector&, const AkVector&)>(&AkTransform::Set))
+  ;
+  class_<AkVector>("AkVector")
+    .constructor<>()
+    .property("x", &AkVector::X)
+    .property("y", &AkVector::Y)
+    .property("z", &AkVector::Z)
+  ;
+  class_<AkVector64>("AkVector64")
+    .constructor<>()
+    .property("x", &AkVector64::X)
+    .property("y", &AkVector64::Y)
+    .property("z", &AkVector64::Z)
+  ;
+  class_<AkWorldTransform>("AkWorldTransform")
+    .constructor()
+    .property("Position", &AkWorldTransform::Position, select_overload<void(const AkVector64&)>(&AkWorldTransform::SetPosition))
+    .property("OrientationFront", &AkWorldTransform::OrientationFront)
+    .property("OrientationTop", &AkWorldTransform::OrientationTop)
+    .function("SetOrientation", select_overload<void(const AkVector&, const AkVector&)>(&AkWorldTransform::SetOrientation))
+    .function("Set", select_overload<void(const AkVector64&, const AkVector&, const AkVector&)>(&AkWorldTransform::Set))
   ;
 
   /**
@@ -427,39 +460,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
     return AK_Success;
   }));
-  class_<AkVector>("AkVector")
-    .constructor<>()
-    .property("x", &AkVector::X)
-    .property("y", &AkVector::Y)
-    .property("z", &AkVector::Z)
-  ;
-  class_<AkVector64>("AkVector64")
-    .constructor<>()
-    .property("x", &AkVector64::X)
-    .property("y", &AkVector64::Y)
-    .property("z", &AkVector64::Z)
-  ;
-  class_<AkTransform>("AkTransform")
-    .constructor()
-    .property("Position", &AkTransform::Position, select_overload<void(const AkVector&)>(&AkTransform::SetPosition))
-    .property("OrientationFront", &AkTransform::OrientationFront)
-    .property("OrientationTop", &AkTransform::OrientationTop)
-    .function("SetOrientation", select_overload<void(const AkVector&, const AkVector&)>(&AkTransform::SetOrientation))
-    .function("Set", select_overload<void(const AkVector&, const AkVector&, const AkVector&)>(&AkTransform::Set))
-  ;
-  class_<AkWorldTransform>("AkWorldTransform")
-    .constructor()
-    .property("Position", &AkWorldTransform::Position, select_overload<void(const AkVector64&)>(&AkWorldTransform::SetPosition))
-    .property("OrientationFront", &AkWorldTransform::OrientationFront)
-    .property("OrientationTop", &AkWorldTransform::OrientationTop)
-    .function("SetOrientation", select_overload<void(const AkVector&, const AkVector&)>(&AkWorldTransform::SetOrientation))
-    .function("Set", select_overload<void(const AkVector64&, const AkVector&, const AkVector&)>(&AkWorldTransform::Set))
-  ;
-  enum_<AkSetPositionFlags>("AkSetPositionFlags")
-    .value("Emitter", AkSetPositionFlags_Emitter)
-    .value("Listener", AkSetPositionFlags_Listener)
-    .value("Default", AkSetPositionFlags_Default)
-  ;
 }
 
 
