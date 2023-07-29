@@ -28,28 +28,7 @@ using namespace emscripten;
 CAkFilePackageLowLevelIOBlocking g_lowLevelIO;
 
 // Helpers
-struct AkAudioSettings createAkAudioSettings(AkUInt32 uNumSamplesPerFrame, AkUInt32 uNumSamplesPerSecond) {
-  struct AkAudioSettings ret;
-  ret.uNumSamplesPerFrame = uNumSamplesPerFrame;
-  ret.uNumSamplesPerSecond = uNumSamplesPerSecond;
-  return ret;
-}
-struct AkSegmentInfo createAkSegmentInfo(AkTimeMs iCurrentPosition, AkTimeMs iPreEntryDuration,
-                                         AkTimeMs iActiveDuration, AkTimeMs iPostExitDuration,
-                                         AkTimeMs iRemainingLookAheadTime, AkReal32 fBeatDuration,
-                                         AkReal32 fBarDuration, AkReal32 fGridDuration, AkReal32 fGridOffset) {
-  struct AkSegmentInfo ret;
-  ret.iCurrentPosition = iCurrentPosition;
-  ret.iPreEntryDuration = iPreEntryDuration;
-  ret.iActiveDuration = iActiveDuration;
-  ret.iPostExitDuration = iPostExitDuration;
-  ret.iRemainingLookAheadTime = iRemainingLookAheadTime;
-  ret.fBeatDuration = fBeatDuration;
-  ret.fBarDuration = fBarDuration;
-  ret.fGridDuration = fGridDuration;
-  ret.fGridOffset = fGridOffset;
-  return ret;
-}
+
 
 EMSCRIPTEN_BINDINGS(my_module) {
   /**
@@ -132,6 +111,10 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .value("FilePermissionError", AK_FilePermissionError) 	///< The file access permissions prevent opening a file.
     .value("UnknownFileError", AK_UnknownFileError)	///< Rare file error occured, as opposed to AK_FileNotFound or AK_FilePermissionError. This lumps all unrecognized OS file system errors.
   ;
+  enum_<AkPanningRule>("AkPanningRule")
+    .value("Speakers", AkPanningRule_Speakers)
+    .value("Headphones", AkPanningRule_Headphones)
+  ;
 
   // Structs
   class_<AkAudioSettings>("AkAudioSettings")
@@ -139,10 +122,37 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .property("uNumSamplesPerFrame", &AkAudioSettings::uNumSamplesPerFrame)
     .property("uNumSamplesPerSecond", &AkAudioSettings::uNumSamplesPerSecond)
   ;
-
-  // Helpers
-  function("createAkAudioSettings", &createAkAudioSettings);
-  function("createAkSegmentInfo", &createAkSegmentInfo);
+  class_<AkChannelConfig>("AkChannelConfig")
+    .constructor<AkUInt32, AkUInt32>()
+    .function("Clear", &AkChannelConfig::Clear)
+    .function("SetStandard", &AkChannelConfig::SetStandard)
+    .function("SetStandardOrAnonymous", &AkChannelConfig::SetStandardOrAnonymous)
+    .function("SetAnonymous", &AkChannelConfig::SetAnonymous)
+    .function("SetAmbisonic", &AkChannelConfig::SetAmbisonic)
+    .function("SetObject", &AkChannelConfig::SetObject)
+    .function("SetSameAsMainMix", &AkChannelConfig::SetSameAsMainMix)
+    .function("SetSameAsPassthrough", &AkChannelConfig::SetSameAsPassthrough)
+    .function("IsValid", &AkChannelConfig::IsValid)
+    .function("Serialize", &AkChannelConfig::Serialize)
+    .function("Deserialize", &AkChannelConfig::Deserialize)
+    .function("RemoveLFE", &AkChannelConfig::RemoveLFE)
+    .function("RemoveCenter", &AkChannelConfig::RemoveCenter)
+    .function("HasLFE", &AkChannelConfig::HasLFE)
+    .function("HasCenter", &AkChannelConfig::HasCenter)
+    // TODO: uNumChannels, eConfigType, uChannelMask
+  ;
+  class_<AkSegmentInfo>("AkSegmentInfo")
+    .constructor<>()
+    .property("iCurrentPosition", &AkSegmentInfo::iCurrentPosition)
+    .property("iPreEntryDuration", &AkSegmentInfo::iPreEntryDuration)
+    .property("iActiveDuration", &AkSegmentInfo::iActiveDuration)
+    .property("iPostExitDuration", &AkSegmentInfo::iPostExitDuration)
+    .property("iRemainingLookAheadTime", &AkSegmentInfo::iRemainingLookAheadTime)
+    .property("fBeatDuration", &AkSegmentInfo::fBeatDuration)
+    .property("fBarDuration", &AkSegmentInfo::fBarDuration)
+    .property("fGridDuration", &AkSegmentInfo::fGridDuration)
+    .property("fGridOffset", &AkSegmentInfo::fGridOffset)
+  ;
 
   /**
   * MemoryMgr
@@ -242,27 +252,62 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SoundEngine_IsInitialized", &AK::SoundEngine::IsInitialized);
   function("SoundEngine_Term", &AK::SoundEngine::Term);
   function("SoundEngine_GetAudioSettings", &AK::SoundEngine::GetAudioSettings);
+  function("SoundEngine_GetSpeakerConfiguration", &AK::SoundEngine::GetSpeakerConfiguration);
+  function("SoundEngine_GetOutputDeviceConfiguration", &AK::SoundEngine::GetOutputDeviceConfiguration);
+  // FIXME: these all throw "non-const lvalue reference to type <type> cannot bind to a temporary of type <type> on make
+  // function("SoundEngine_GetPanningRule", &AK::SoundEngine::GetPanningRule);
+  // function("SoundEngine_SetPanningRule", &AK::SoundEngine::SetPanningRule);
+  // function("SoundEngine_GetSpeakerAngles", &AK::SoundEngine::GetSpeakerAngles, allow_raw_pointers());
+  // function("SoundEngine_SetSpeakerAngles", &AK::SoundEngine::SetSpeakerAngles, allow_raw_pointers());
+  function("SoundEngine_SetVolumeThreshold", &AK::SoundEngine::SetVolumeThreshold);
+  function("SoundEngine_SetMaxNumVoicesLimit", &AK::SoundEngine::SetMaxNumVoicesLimit);
 
+  // Rendering Audio
   function("SoundEngine_RenderAudio", optional_override([]() {
     // I suspect the optional flag here controls whether AudioWorklet is used, if so we should always want to use it
     AK::SoundEngine::RenderAudio();
   }));
-  function("SoundEngine_LoadBank", optional_override([](const std::wstring& bankId) {
-    AkBankID id;
-    return AK::SoundEngine::LoadBank(bankId.c_str(), id);
-  }));
-  function("SoundEngine_UnloadBank", select_overload<AKRESULT(const char*, const void*, AkBankType)>(&AK::SoundEngine::UnloadBank), allow_raw_pointers());
+
+  // Game Objects
   function("SoundEngine_RegisterGameObj", optional_override([](AkGameObjectID gameObjectID, const std::string& name) {
     return AK::SoundEngine::RegisterGameObj(gameObjectID, name.c_str());
   }), allow_raw_pointers());
   function("SoundEngine_UnregisterGameObj", &AK::SoundEngine::UnregisterGameObj);
   function("SoundEngine_UnregisterAllGameObj", &AK::SoundEngine::UnregisterAllGameObj);
+  function("SoundEngine_SetPosition", &AK::SoundEngine::SetPosition);
+  // TODO: Figure out which overload to support (or both)
+  // function("SoundEngine_SetMultiplePositions", &AK::SoundEngine::SetMultiplePositions);
+  function("SoundEngine_SetScalingFactor", &AK::SoundEngine::SetScalingFactor);
+  function("SoundEngine_SetDistanceProbe", &AK::SoundEngine::SetDistanceProbe);
+
+  // Listeners
   function("SoundEngine_SetDefaultListeners", optional_override([](const AkGameObjectID gameObjectID, AkUInt32 numListeners) {
     return AK::SoundEngine::SetDefaultListeners(&gameObjectID, numListeners);
   }), allow_raw_pointers());
+
+  // Game Syncs
+
+  // Environments
+
+  // Capture
+
+  // Offline Rendering
+
+  // Secondary Outputs
+  // XXX: Is this applicable to web?
+
+  // Event Management
   function("SoundEngine_PostEvent", optional_override([](const std::wstring& eventName, AkGameObjectID gameObjectID) {
     return AK::SoundEngine::PostEvent(eventName.c_str(), gameObjectID);
   }), allow_raw_pointers());
+
+  // Bank Management
+  function("SoundEngine_LoadBank", optional_override([](const std::wstring& bankId) {
+    AkBankID id;
+    return AK::SoundEngine::LoadBank(bankId.c_str(), id);
+  }));
+  function("SoundEngine_UnloadBank", select_overload<AKRESULT(const char*, const void*, AkBankType)>(&AK::SoundEngine::UnloadBank), allow_raw_pointers());
+
 
   /**
   * SoundEngine::DynamicDialogue
@@ -351,7 +396,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .value("Listener", AkSetPositionFlags_Listener)
     .value("Default", AkSetPositionFlags_Default)
   ;
-  function("SoundEngine_SetPosition", &AK::SoundEngine::SetPosition);
 }
 
 
