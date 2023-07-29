@@ -1,4 +1,5 @@
 wwise.js: wwise.cpp
+	mkdir -p dist
 	emcc --bind -o dist/wwise.js wwise.cpp \
 	include/SoundEngine/Common/AkFilePackageLUT.cpp \
 	include/SoundEngine/POSIX/AkDefaultIOHookBlocking.cpp \
@@ -11,4 +12,4 @@ wwise.js: wwise.cpp
 	-s WASM_BIGINT -msse4.1 -msimd128 -fno-rtti -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0 -fPIC \
 	-s LLD_REPORT_UNDEFINED --no-entry -s EXPORTED_RUNTIME_METHODS=getWasmTableEntry,FS_createPreloadedFile -s FILESYSTEM=1 \
 	-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE='["$$Browser"]' -s ALLOW_MEMORY_GROWTH=1 \
-	-s MODULARIZE=1 -s EXPORT_NAME="AKModule"
+	-s MODULARIZE=1 -s EXPORT_NAME="WwiseModule"
