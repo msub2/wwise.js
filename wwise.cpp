@@ -102,7 +102,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .value("AK_UnknownFileError", AK_UnknownFileError)	///< Rare file error occured, as opposed to AK_FileNotFound or AK_FilePermissionError. This lumps all unrecognized OS file system errors.
   ;
 
-  function("InitSoundEngine", optional_override([]() -> AKRESULT {
+  function("MemoryMgr_Init", optional_override([]() -> AKRESULT {
     // Memory Manager
     AkMemSettings memSettings;
     AK::MemoryMgr::GetDefaultSettings(memSettings);
@@ -111,6 +111,9 @@ EMSCRIPTEN_BINDINGS(my_module) {
       return AK_Fail;
     }
 
+    return AK_Success;
+  }));
+  function("StreamMgr_Create", optional_override([]() {
     // Streaming Manager
     AkStreamMgrSettings stmSettings;
     AK::StreamMgr::GetDefaultSettings(stmSettings);
@@ -128,6 +131,12 @@ EMSCRIPTEN_BINDINGS(my_module) {
       return AK_Fail;
     }
 
+    g_lowLevelIO.SetBasePath(AKTEXT("/"));
+    AK::StreamMgr::SetCurrentLanguage(AKTEXT("English(US)"));
+
+    return AK_Success;
+  }));
+  function("SoundEngine_Init", optional_override([]() -> AKRESULT {
     // Sound Engine
     AkInitSettings initSettings;
     AkPlatformInitSettings platformInitSettings;
@@ -139,6 +148,9 @@ EMSCRIPTEN_BINDINGS(my_module) {
       return AK_Fail;
     }
 
+    return AK_Success;
+  }));
+  function("MusicEngine_Init", optional_override([]() {
     // Music Engine
     AkMusicSettings musicInit;
     AK::MusicEngine::GetDefaultInitSettings(musicInit);
@@ -148,51 +160,70 @@ EMSCRIPTEN_BINDINGS(my_module) {
       return AK_Fail;
     }
 
+    return AK_Success;
+  }));
+  function("SpatialAudio_Init", optional_override([]() {
     // Spatial Audio
     AkSpatialAudioInitSettings settings; // The constructor fills AkSpatialAudioInitSettings with the recommended default settings.
-    if ( AK::SpatialAudio::Init(settings) != AK_Success) {
+    if (AK::SpatialAudio::Init(settings) != AK_Success) {
       emscripten_run_script("console.error('Could not create the Spatial Audio.')");
       return AK_Fail;
     }
 
     return AK_Success;
   }));
-  function("ProcessAudio", optional_override([]() {
+  function("SoundEngine_RenderAudio", optional_override([]() {
+    // I suspect the optional flag here controls whether AudioWorklet is used, if so we should always want to use it
     AK::SoundEngine::RenderAudio();
   }));
-  function("LoadBank", optional_override([]() {
-    g_lowLevelIO.SetBasePath(AKTEXT("/"));
-    AK::StreamMgr::SetCurrentLanguage(AKTEXT("English(US)"));
-
-    AkBankID bankID; // Not used. These banks can be unloaded with their file name.
-    AKRESULT eResult;
-
-    eResult = AK::SoundEngine::LoadBank(L"Init.bnk", bankID);
-    eResult = AK::SoundEngine::LoadBank(L"Main.bnk", bankID);
-
-    return AK_Success;
+  function("SoundEngine_LoadBank", optional_override([](const std::wstring& bankId) {
+    AkBankID id;
+    return AK::SoundEngine::LoadBank(bankId.c_str(), id);
   }));
-  function("RegisterTestGameObjectsAndListeners", optional_override([]() {
-    AkGameObjectID MY_DEFAULT_LISTENER = 0;
-
-    // Register the main listener.
-    AK::SoundEngine::RegisterGameObj(MY_DEFAULT_LISTENER, "My Default Listener");
-
-    // Set one listener as the default.
-    AK::SoundEngine::SetDefaultListeners(&MY_DEFAULT_LISTENER, 1);
-
-    // Register a game object for playing sounds
-    AkGameObjectID MY_EMITTER = 1;
-
-    AK::SoundEngine::RegisterGameObj(MY_EMITTER, "My Emitter");
-
-    // At this point "My Emitter" has 1 listener, "My Default Listener", because we designated it as the default listener.
-
-    AK::SoundEngine::PostEvent(L"Ambience", 1);
-
-    return AK_Success;
-  }));
-
+  function("SoundEngine_UnloadBank", select_overload<AKRESULT(const char*, const void*, AkBankType)>(&AK::SoundEngine::UnloadBank), allow_raw_pointers());
+  function("SoundEngine_RegisterGameObj", optional_override([](AkGameObjectID gameObjectID, const std::string& name) {
+    return AK::SoundEngine::RegisterGameObj(gameObjectID, name.c_str());
+  }), allow_raw_pointers());
+  function("SoundEngine_UnregisterGameObj", &AK::SoundEngine::UnregisterGameObj);
+  function("SoundEngine_UnregisterAllGameObj", &AK::SoundEngine::UnregisterAllGameObj);
+  function("SoundEngine_SetDefaultListeners", optional_override([](const AkGameObjectID gameObjectID, AkUInt32 numListeners) {
+    return AK::SoundEngine::SetDefaultListeners(&gameObjectID, numListeners);
+  }), allow_raw_pointers());
+  function("SoundEngine_PostEvent", optional_override([](const std::wstring& eventName, AkGameObjectID gameObjectID) {
+    return AK::SoundEngine::PostEvent(eventName.c_str(), gameObjectID);
+  }), allow_raw_pointers());
+  value_object<AkVector>("AkVector")
+    .field("x", &AkVector::X)
+    .field("y", &AkVector::Y)
+    .field("z", &AkVector::Z)
+  ;
+  value_object<AkVector64>("AkVector64")
+    .field("x", &AkVector64::X)
+    .field("y", &AkVector64::Y)
+    .field("z", &AkVector64::Z)
+  ;
+  class_<AkTransform>("AkTransform")
+    .constructor()
+    .property("Position", &AkTransform::Position, select_overload<void(const AkVector&)>(&AkTransform::SetPosition))
+    .property("OrientationFront", &AkTransform::OrientationFront)
+    .property("OrientationTop", &AkTransform::OrientationTop)
+    .function("SetOrientation", select_overload<void(const AkVector&, const AkVector&)>(&AkTransform::SetOrientation))
+    .function("Set", select_overload<void(const AkVector&, const AkVector&, const AkVector&)>(&AkTransform::Set))
+  ;
+  class_<AkWorldTransform>("AkWorldTransform")
+    .constructor()
+    .property("Position", &AkWorldTransform::Position, select_overload<void(const AkVector64&)>(&AkWorldTransform::SetPosition))
+    .property("OrientationFront", &AkWorldTransform::OrientationFront)
+    .property("OrientationTop", &AkWorldTransform::OrientationTop)
+    .function("SetOrientation", select_overload<void(const AkVector&, const AkVector&)>(&AkWorldTransform::SetOrientation))
+    .function("Set", select_overload<void(const AkVector64&, const AkVector&, const AkVector&)>(&AkWorldTransform::Set))
+  ;
+  enum_<AkSetPositionFlags>("AkSetPositionFlags")
+    .value("Emitter", AkSetPositionFlags_Emitter)
+    .value("Listener", AkSetPositionFlags_Listener)
+    .value("Default", AkSetPositionFlags_Default)
+  ;
+  function("SoundEngine_SetPosition", &AK::SoundEngine::SetPosition);
 }
 
 
