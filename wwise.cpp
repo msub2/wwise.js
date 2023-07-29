@@ -111,6 +111,19 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .value("FilePermissionError", AK_FilePermissionError) 	///< The file access permissions prevent opening a file.
     .value("UnknownFileError", AK_UnknownFileError)	///< Rare file error occured, as opposed to AK_FileNotFound or AK_FilePermissionError. This lumps all unrecognized OS file system errors.
   ;
+  enum_<AkCurveInterpolation>("AkCurveInterpolation")
+    .value("Log3", AkCurveInterpolation_Log3)
+    .value("Sine", AkCurveInterpolation_Sine)
+    .value("Log1", AkCurveInterpolation_Log1)
+    .value("InvSCurve", AkCurveInterpolation_InvSCurve)
+    .value("Linear", AkCurveInterpolation_Linear)
+    .value("SCurve", AkCurveInterpolation_SCurve)
+    .value("Exp1", AkCurveInterpolation_Exp1)
+    .value("SineRecip", AkCurveInterpolation_SineRecip)
+    .value("Exp3", AkCurveInterpolation_Exp3)
+    .value("LastFadeCurve", AkCurveInterpolation_LastFadeCurve)
+    .value("Constant", AkCurveInterpolation_Constant)
+  ;
   enum_<AkPanningRule>("AkPanningRule")
     .value("Speakers", AkPanningRule_Speakers)
     .value("Headphones", AkPanningRule_Headphones)
@@ -121,6 +134,12 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .constructor<>()
     .property("uNumSamplesPerFrame", &AkAudioSettings::uNumSamplesPerFrame)
     .property("uNumSamplesPerSecond", &AkAudioSettings::uNumSamplesPerSecond)
+  ;
+  class_<AkAuxSendValue>("AkAuxSendValue")
+    .constructor<>()
+    .property("listenerID", &AkAuxSendValue::listenerID)
+    .property("auxBusID", &AkAuxSendValue::auxBusID)
+    .property("fControlValue", &AkAuxSendValue::fControlValue)
   ;
   class_<AkChannelConfig>("AkChannelConfig")
     .constructor<AkUInt32, AkUInt32>()
@@ -140,6 +159,11 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .function("HasLFE", &AkChannelConfig::HasLFE)
     .function("HasCenter", &AkChannelConfig::HasCenter)
     // TODO: uNumChannels, eConfigType, uChannelMask
+  ;
+  class_<AkObstructionOcclusionValues>("AkObstructionOcclusionValues")
+    .constructor<>()
+    .property("occlusion", &AkObstructionOcclusionValues::occlusion)
+    .property("obstruction", &AkObstructionOcclusionValues::obstruction)
   ;
   class_<AkSegmentInfo>("AkSegmentInfo")
     .constructor<>()
@@ -180,18 +204,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
   * MusicEngine
   */
 
-  class_<AkSegmentInfo>("AkSegmentInfo")
-    .constructor<>()
-    .property("iCurrentPosition", &AkSegmentInfo::iCurrentPosition)
-    .property("iPreEntryDuration", &AkSegmentInfo::iPreEntryDuration)
-    .property("iActiveDuration", &AkSegmentInfo::iActiveDuration)
-    .property("iPostExitDuration", &AkSegmentInfo::iPostExitDuration)
-    .property("iRemainingLookAheadTime", &AkSegmentInfo::iRemainingLookAheadTime)
-    .property("fBeatDuration", &AkSegmentInfo::fBeatDuration)
-    .property("fBarDuration", &AkSegmentInfo::fBarDuration)
-    .property("fGridDuration", &AkSegmentInfo::fGridDuration)
-    .property("fGridOffset", &AkSegmentInfo::fGridOffset)
-  ;
   // Initialization
   function("MusicEngine_Init", optional_override([]() {
     AkMusicSettings musicInit;
@@ -281,17 +293,69 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SoundEngine_SetDistanceProbe", &AK::SoundEngine::SetDistanceProbe);
 
   // Listeners
+  function("SoundEngine_SetListeners", &AK::SoundEngine::SetListeners, allow_raw_pointers());
+  function("SoundEngine_AddListener", &AK::SoundEngine::AddListener);
+  function("SoundEngine_RemoveListener", &AK::SoundEngine::RemoveListener);
   function("SoundEngine_SetDefaultListeners", optional_override([](const AkGameObjectID gameObjectID, AkUInt32 numListeners) {
     return AK::SoundEngine::SetDefaultListeners(&gameObjectID, numListeners);
   }), allow_raw_pointers());
+  function("SoundEngine_AddDefaultListener", &AK::SoundEngine::AddDefaultListener);
+  function("SoundEngine_RemoveDefaultListener", &AK::SoundEngine::RemoveDefaultListener);
+  function("SoundEngine_ResetListenersToDefault", &AK::SoundEngine::ResetListenersToDefault);
+  function("SoundEngine_SetListenerSpatialization", optional_override([](AkGameObjectID in_uListenerID, bool in_bSpatialized, AkChannelConfig in_channelConfig) {
+    // XXX: Omitting AK::SpeakerVolumes::VectorPtr in_pVolumeOffsets for now
+    return AK::SoundEngine::SetListenerSpatialization(in_uListenerID, in_bSpatialized, in_channelConfig);
+  }), allow_raw_pointers());
 
   // Game Syncs
+  // Note: Need to override AkRtpcValue as regular float for binding to take
+  function("SoundEngine_SetRTPCValue", optional_override([](const std::string& in_pszRtpcName, float in_value, AkGameObjectID in_gameObjectID=AK_INVALID_GAME_OBJECT, AkTimeMs in_uValueChangeDuration=0, AkCurveInterpolation in_eFadeCurve=AkCurveInterpolation_Linear, bool in_bBypassInternalValueInterpolation=false) {
+    return AK::SoundEngine::SetRTPCValue(in_pszRtpcName.c_str(), in_value, in_gameObjectID=AK_INVALID_GAME_OBJECT, in_uValueChangeDuration, in_eFadeCurve, in_bBypassInternalValueInterpolation);
+  }), allow_raw_pointers());
+  function("SoundEngine_SetRTPCValueByPlayingID", optional_override([](const std::string& in_pszRtpcName, float in_value, AkPlayingID in_playingID, AkTimeMs in_uValueChangeDuration=0, AkCurveInterpolation in_eFadeCurve=AkCurveInterpolation_Linear, bool in_bBypassInternalValueInterpolation=false) {
+    return AK::SoundEngine::SetRTPCValueByPlayingID(in_pszRtpcName.c_str(), in_value, in_playingID, in_uValueChangeDuration, in_eFadeCurve, in_bBypassInternalValueInterpolation);
+  }));
+  function("SoundEngine_ResetRTPCValue", optional_override([](const std::string& in_pszRtpcName, AkGameObjectID in_gameObjectID=AK_INVALID_GAME_OBJECT, AkTimeMs in_uValueChangeDuration=0, AkCurveInterpolation in_eFadeCurve=AkCurveInterpolation_Linear, bool in_bBypassInternalValueInterpolation=false) {
+    return AK::SoundEngine::ResetRTPCValue(in_pszRtpcName.c_str(), in_gameObjectID, in_uValueChangeDuration, in_eFadeCurve, in_bBypassInternalValueInterpolation);
+  }));
+  function("SoundEngine_SetSwitch", optional_override([](const std::string& in_pszSwitchGroup, const std::string& in_pszSwitchState, AkGameObjectID in_gameObjectID) {
+    return AK::SoundEngine::SetSwitch(in_pszSwitchGroup.c_str(), in_pszSwitchState.c_str(), in_gameObjectID);
+  }));
+  function("SoundEngine_PostTrigger", optional_override([](const std::string& in_pszTrigger, AkGameObjectID in_gameObjectID) {
+    return AK::SoundEngine::PostTrigger(in_pszTrigger.c_str(), in_gameObjectID);
+  }));
+  function("SoundEngine_SetState", optional_override([](const std::string& in_pszStateGroup, const std::string& in_pszState) {
+    return AK::SoundEngine::SetState(in_pszStateGroup.c_str(), in_pszState.c_str());
+  }));
 
   // Environments
+  function("SetGameObjectAuxSendValues", &AK::SoundEngine::SetGameObjectAuxSendValues, allow_raw_pointers());
+  // TODO: Look into binding callbacks, if possible
+  // function("RegisterBusMeteringCallback", &AK::SoundEngine::RegisterBusMeteringCallback);
+  // function("RegisterOutputDeviceMeteringCallback", &AK::SoundEngine::RegisterOutputDeviceMeteringCallback);
+  function("SetGameObjectOutputBusVolume", &AK::SoundEngine::SetGameObjectOutputBusVolume);
+  function("SetActorMixerEffect", &AK::SoundEngine::SetActorMixerEffect);
+  function("SetBusEffect", optional_override([](const std::string& in_pszBusName, AkUInt32 in_uFXIndex, AkUniqueID in_shareSetID) {
+    return AK::SoundEngine::SetBusEffect(in_pszBusName.c_str(), in_uFXIndex, in_shareSetID);
+  }));
+  function("SetOutputDeviceEffect", &AK::SoundEngine::SetOutputDeviceEffect);
+  function("SetMixer", optional_override([](const std::string& in_pszBusName, AkUniqueID in_shareSetID) {
+    return AK::SoundEngine::SetMixer(in_pszBusName.c_str(), in_shareSetID);
+  }));
+  function("SetBusConfig", optional_override([](const std::string& in_pszBusName, AkChannelConfig in_channelConfig) {
+    return AK::SoundEngine::SetBusConfig(in_pszBusName.c_str(), in_channelConfig);
+  }));
+  function("SetObjectObstructionAndOcclusion", &AK::SoundEngine::SetObjectObstructionAndOcclusion);
+  function("SetMultipleObstructionAndOcclusion", &AK::SoundEngine::SetMultipleObstructionAndOcclusion, allow_raw_pointers());
+  // XXX: Are these applicable to web?
+  // function("GetContainerHistory", &AK::SoundEngine::GetContainerHistory);
+  // function("SetContainerHistory", &AK::SoundEngine::SetContainerHistory);
 
   // Capture
+  // XXX: Is this applicable to web?
 
   // Offline Rendering
+  // XXX: Is this applicable to web?
 
   // Secondary Outputs
   // XXX: Is this applicable to web?
