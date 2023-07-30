@@ -19,6 +19,8 @@
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 #include <AK/SoundEngine/Common/AkQueryParameters.h>
+#include <AK/SoundEngine/Common/AkDynamicDialogue.h>
+#include <AK/SoundEngine/Common/AkDynamicSequence.h>
 #include <AK/MusicEngine/Common/AkMusicEngine.h>
 #include <AK/SpatialAudio/Common/AkSpatialAudio.h>
 
@@ -490,9 +492,19 @@ EMSCRIPTEN_BINDINGS(my_module) {
   * SoundEngine::DynamicDialogue
   */
 
+  // TODO: Double check how to bind string arrays
+  // function("SoundEngine_DynamicDialogue_ResolveDialogueEvent", optional_override([](const char *in_pszEventName, const char **in_aArgumentValueNames, AkUInt32 in_uNumArguments, AkPlayingID in_idSequence=AK_INVALID_PLAYING_ID, AkCandidateCallbackFunc in_candidateCallbackFunc=NULL, void *in_pCookie=NULL) {
+  //   return AK::SoundEngine::DynamicDialogue::ResolveDialogueEvent();
+  // }));
+  // FIXME: non-const lvalue reference to type 'int/float' cannot bind to a temporary of type 'int/float'
+  // function("SoundEngine_DynamicDialogue_GetDialogueEventCustomPropertyValueInt", select_overload<AKRESULT(AkUniqueID, AkUInt32, AkInt32&)>(&AK::SoundEngine::DynamicDialogue::GetDialogueEventCustomPropertyValue));
+  // function("SoundEngine_DynamicDialogue_GetDialogueEventCustomPropertyValueFloat", select_overload<AKRESULT(AkUniqueID, AkUInt32, AkReal32&)>(&AK::SoundEngine::DynamicDialogue::GetDialogueEventCustomPropertyValue));
+
   /**
   * SoundEngine::DynamicSequence
   */
+
+  // TODO: Implement namespace and playlists
 
   /**
   * SoundEngine::Query
@@ -507,8 +519,45 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .value("Unavailable", AK::SoundEngine::Query::RTPCValue_type::RTPCValue_Unavailable)
   ;
 
+  // Structs
+  class_<AK::SoundEngine::Query::GameObjDst>("SoundEngine_Query_GameObjDst")
+    .constructor<AkGameObjectID, AkReal32>()
+    .property("m_gameObjID", &AK::SoundEngine::Query::GameObjDst::m_gameObjID)
+    .property("m_dst", &AK::SoundEngine::Query::GameObjDst::m_dst)
+  ;
+
+  // Game Objects
+  function("GetPosition", &AK::SoundEngine::Query::GetPosition);
+
+  // Listeners
+
+  // FIXME: non-const lvalue reference to type 'unsigned int' cannot bind to a temporary of type 'unsigned int'
+  // function("GetListeners", &AK::SoundEngine::Query::GetListeners, allow_raw_pointers());
+  function("SoundEngine_Query_GetListenerPosition", &AK::SoundEngine::Query::GetListenerPosition, allow_raw_pointers());
+  // FIXME: non-const lvalue reference to type 'bool' cannot bind to a temporary of type 'bool'
+  // function("GetListenerSpatialization", &AK::SoundEngine::Query::GetListenerSpatialization);
+
+  // Game Syncs
+  // FIXME: non-const lvalue reference cannot bind to a temporary
+  // function("SoundEngine_Query_GetRTPCValue", optional_override([](const std::string& in_pszRtpcName, AkGameObjectID in_gameObjectID, AkPlayingID in_playingID, AkRtpcValue &out_rValue, AK::SoundEngine::Query::RTPCValue_type &io_rValueType) {
+  //   return AK::SoundEngine::Query::GetRTPCValue(in_pszRtpcName.c_str(), in_gameObjectID, in_playingID, out_rValue, io_rValueType);
+  // }));
+  // function("SoundEngine_Query_GetSwitch", optional_override([](const std::string& in_pstrSwitchGroupName, AkGameObjectID in_GameObj, AkSwitchStateID &out_rSwitchState) {
+  //   return AK::SoundEngine::Query::GetSwitch(in_pstrSwitchGroupName.c_str(), in_GameObj, out_rSwitchState);
+  // }));
+  // function("SoundEngine_Query_GetState", optional_override([](const std::string& in_pstrStateGroupName, AkStateID &out_rState) {
+  //   return AK::SoundEngine::Query::GetState(in_pstrStateGroupName.c_str(), out_rState);
+  // }));
+
+  // Environments
+  // TODO: Fill out more after figuring out outvalue binding issue
+
+  /**
+  * StreamMgr
+  */
+
+  // Initialization
   function("StreamMgr_Create", optional_override([]() {
-    // Streaming Manager
     AkStreamMgrSettings stmSettings;
     AK::StreamMgr::GetDefaultSettings(stmSettings);
 
@@ -530,8 +579,13 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
     return AK_Success;
   }));
+
+  /**
+  * Spatial Audio
+  */
+
+  // Initialization
   function("SpatialAudio_Init", optional_override([]() {
-    // Spatial Audio
     AkSpatialAudioInitSettings settings; // The constructor fills AkSpatialAudioInitSettings with the recommended default settings.
     if (AK::SpatialAudio::Init(settings) != AK_Success) {
       emscripten_run_script("console.error('Could not create the Spatial Audio.')");
