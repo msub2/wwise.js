@@ -42,7 +42,9 @@ Once you have access to the Web Platform, you'll need to create the following fo
 Throughout development I gradually worked out the incantation to get these bindings to build. Just run
 
 ```sh
-make
+make debug
+# OR
+make profile
 ```
 
 and you should get a copy of `wwise.js` and `wwise.wasm` in the `dist` folder. The makefile is a bit crude since I don't usually work with C/C++, so if anyone knows how to make it any neater that would be appreciated.
