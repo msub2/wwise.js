@@ -394,17 +394,97 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // XXX: Is this applicable to web?
 
   // Event Management
-  function("SoundEngine_PostEvent", optional_override([](const std::wstring& eventName, AkGameObjectID gameObjectID) {
+  // TODO: Look into callbacks support
+  function("SoundEngine_PostEvent", optional_override([](const std::string& eventName, AkGameObjectID gameObjectID) {
     return AK::SoundEngine::PostEvent(eventName.c_str(), gameObjectID);
   }), allow_raw_pointers());
+  function("ExecuteActionOnEvent", optional_override([](const std::string& in_pszEventName, AK::SoundEngine::AkActionOnEventType in_ActionType, AkGameObjectID in_gameObjectID=AK_INVALID_GAME_OBJECT, AkTimeMs in_uTransitionDuration=0, AkCurveInterpolation in_eFadeCurve=AkCurveInterpolation_Linear, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
+    return AK::SoundEngine::ExecuteActionOnEvent(in_pszEventName.c_str(), in_ActionType, in_gameObjectID, in_uTransitionDuration, in_eFadeCurve, in_PlayingID);
+  }));
+  function("PostMIDIOnEvent", &AK::SoundEngine::PostMIDIOnEvent, allow_raw_pointers());
+  function("StopMIDIOnEvent", &AK::SoundEngine::StopMIDIOnEvent);
+  function("PinEventInStreamCache", optional_override([](const std::string& in_pszEventName, AkPriority in_uActivePriority, AkPriority in_uInactivePriority) {
+    return AK::SoundEngine::PinEventInStreamCache(in_pszEventName.c_str(), in_uActivePriority, in_uInactivePriority);
+  }));
+  function("UnpinEventInStreamCache", optional_override([](const std::string& in_pszEventName) {
+    return AK::SoundEngine::UnpinEventInStreamCache(in_pszEventName.c_str());
+  }));
+  // FIXME: non-const lvalue reference to type 'float' cannot bind to a temporary of type 'float'
+  // function("GetBufferStatusForPinnedEvent", optional_override([](const std::string& in_pszEventName, AkReal32 &out_fPercentBuffered, bool &out_bCachePinnedMemoryFull) {
+  //   return AK::SoundEngine::GetBufferStatusForPinnedEvent(in_pszEventName.c_str(), out_fPercentBuffered, out_bCachePinnedMemoryFull);
+  // }));
+  function("SeekOnEventPosition", optional_override([](const std::string& in_pszEventName, AkGameObjectID in_gameObjectID, AkTimeMs in_iPosition, bool in_bSeekToNearestMarker=false, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
+    return AK::SoundEngine::SeekOnEvent(in_pszEventName.c_str(), in_gameObjectID, in_iPosition, in_bSeekToNearestMarker, in_PlayingID);
+  }));
+  function("SeekOnEventPercent", optional_override([](const std::string& in_pszEventName, AkGameObjectID in_gameObjectID, AkReal32 in_fPercent, bool in_bSeekToNearestMarker=false, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
+    return AK::SoundEngine::SeekOnEvent(in_pszEventName.c_str(), in_gameObjectID, in_fPercent, in_bSeekToNearestMarker, in_PlayingID);
+  }));
+  // XXX: Look into callbacks
+  // function("CancelEventCallbackCookie", &AK::SoundEngine::CancelEventCallbackCookie);
+  // function("CancelEventCallbackGameObject", &AK::SoundEngine::CancelEventCallbackGameObject);
+  // function("CancelEventCallback", &AK::SoundEngine::CancelEventCallback);
+  function("GetSourcePlayPosition", &AK::SoundEngine::GetSourcePlayPosition, allow_raw_pointers());
+  function("GetSourcePlayPositions", &AK::SoundEngine::GetSourcePlayPositions, allow_raw_pointers());
+  // FIXME: non-const lvalue reference to type 'int' cannot bind to a temporary of type 'int'
+  // function("GetSourceStreamBuffering", &AK::SoundEngine::GetSourceStreamBuffering);
+  function("StopAll", &AK::SoundEngine::StopAll);
+  function("StopPlayingID", &AK::SoundEngine::StopPlayingID);
+  function("ExecuteActionOnPlayingID", &AK::SoundEngine::ExecuteActionOnPlayingID);
+  function("SetRandomSeed", &AK::SoundEngine::SetRandomSeed);
+  function("MuteBackgroundMusic", &AK::SoundEngine::MuteBackgroundMusic);
+  function("GetBackgroundMusicMute", &AK::SoundEngine::GetBackgroundMusicMute);
+  // XXX: Is this applicable on the web?
+  //function("SendPluginCustomGameData", &AK::SoundEngine::SendPluginCustomGameData);
 
   // Bank Management
-  function("SoundEngine_LoadBank", optional_override([](const std::wstring& bankId) {
+  function("SoundEngine_ClearBanks", &AK::SoundEngine::ClearBanks);
+  function("SoundEngine_SetBankLoadIOSettings", &AK::SoundEngine::SetBankLoadIOSettings);
+  function("SoundEngine_LoadBank", optional_override([](const std::string& bankId) {
     AkBankID id;
     return AK::SoundEngine::LoadBank(bankId.c_str(), id);
   }));
-  function("SoundEngine_UnloadBank", select_overload<AKRESULT(const char*, const void*, AkBankType)>(&AK::SoundEngine::UnloadBank), allow_raw_pointers());
-
+  // TODO: Look into these.
+  // function("SoundEngine_LoadBankMemoryView", &AK::SoundEngine::LoadBankMemoryView);
+  // function("SoundEngine_LoadBankMemoryView", &AK::SoundEngine::LoadBankMemoryView);
+  // function("SoundEngine_LoadBankMemoryCopy", &AK::SoundEngine::LoadBankMemoryCopy);
+  // function("SoundEngine_LoadBankMemoryCopy", &AK::SoundEngine::LoadBankMemoryCopy);
+  // function("SoundEngine_DecodeBank", &AK::SoundEngine::DecodeBank);
+  // function("SoundEngine_LoadBank", &AK::SoundEngine::LoadBank);
+  // function("SoundEngine_LoadBank", &AK::SoundEngine::LoadBank);
+  // function("SoundEngine_LoadBankMemoryView", &AK::SoundEngine::LoadBankMemoryView);
+  // function("SoundEngine_LoadBankMemoryView", &AK::SoundEngine::LoadBankMemoryView);
+  // function("SoundEngine_LoadBankMemoryCopy", &AK::SoundEngine::LoadBankMemoryCopy);
+  function("SoundEngine_UnloadBank", optional_override([](const std::string& bankId) {
+    return AK::SoundEngine::UnloadBank(bankId.c_str(), nullptr, AkBankType_User);
+  }));
+  // XXX: All callback related
+  // function("SoundEngine_UnloadBank", &AK::SoundEngine::UnloadBank);
+  // function("SoundEngine_UnloadBank", &AK::SoundEngine::UnloadBank);
+  // function("SoundEngine_CancelBankCallbackCookie", &AK::SoundEngine::CancelBankCallbackCookie);
+  // TODO: Double check how to bind string arrays
+  // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
+  // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
+  // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
+  // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
+  function("SoundEngine_ClearPreparedEvents", &AK::SoundEngine::ClearPreparedEvents);
+  // TODO: Double check how to bind string arrays
+  // function("SoundEngine_PrepareEvent", optional_override([](PreparationType in_PreparationType, const char** in_ppszString, AkUInt32 in_uNumEvent) {
+  //   AkBankID id;
+  //   return AK::SoundEngine::PrepareEvent();
+  // }));
+  // XXX: Callback variant
+  // function("SoundEngine_PrepareEvent", &AK::SoundEngine::PrepareEvent);
+  // function("SoundEngine_PrepareEvent", &AK::SoundEngine::PrepareEvent);
+  // TODO: Look into these
+  // function("SoundEngine_SetMedia", &AK::SoundEngine::SetMedia);
+  // function("SoundEngine_UnsetMedia", &AK::SoundEngine::UnsetMedia);
+  // function("SoundEngine_TryUnsetMedia", &AK::SoundEngine::TryUnsetMedia);
+  // TODO: Double check how to bind string arrays
+  // function("SoundEngine_PrepareGameSyncs", &AK::SoundEngine::PrepareGameSyncs);
+  // function("SoundEngine_PrepareGameSyncs", &AK::SoundEngine::PrepareGameSyncs);
+  // XXX: Callback variant
+  // function("SoundEngine_PrepareGameSyncs", &AK::SoundEngine::PrepareGameSyncs);
+  // function("SoundEngine_PrepareGameSyncs", &AK::SoundEngine::PrepareGameSyncs);
 
   /**
   * SoundEngine::DynamicDialogue
