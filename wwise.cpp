@@ -23,14 +23,12 @@
 #include <AK/SoundEngine/Common/AkDynamicSequence.h>
 #include <AK/MusicEngine/Common/AkMusicEngine.h>
 #include <AK/SpatialAudio/Common/AkSpatialAudio.h>
+#include <AK/SpatialAudio/Common/AkReverbEstimation.h>
 
 
 using namespace emscripten;
 
 CAkFilePackageLowLevelIOBlocking g_lowLevelIO;
-
-// Helpers
-
 
 EMSCRIPTEN_BINDINGS(my_module) {
   /**
@@ -553,6 +551,76 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // TODO: Fill out more after figuring out outvalue binding issue
 
   /**
+  * SpatialAudio
+  */
+
+  // Basic functions
+  function("SpatialAudio_Init", optional_override([]() {
+    AkSpatialAudioInitSettings settings; // The constructor fills AkSpatialAudioInitSettings with the recommended default settings.
+    if (AK::SpatialAudio::Init(settings) != AK_Success) {
+      emscripten_run_script("console.error('Could not create the Spatial Audio.')");
+      return AK_Fail;
+    }
+
+    return AK_Success;
+  }));
+  function("SpatialAudio_RegisterListener", &AK::SpatialAudio::RegisterListener);
+  function("SpatialAudio_UnregisterListener", &AK::SpatialAudio::UnregisterListener);
+  function("SpatialAudio_SetGameObjectRadius", &AK::SpatialAudio::SetGameObjectRadius);
+
+  // Helper functions for passing game data to the Reflect plug-in
+  function("SpatialAudio_SetImageSource", optional_override([](AkImageSourceID in_srcID, const AkImageSourceSettings &in_info, const std::string& in_name, AkUniqueID in_AuxBusID=AK_INVALID_AUX_ID, AkGameObjectID in_gameObjectID=AK_INVALID_GAME_OBJECT) {
+    AK::SpatialAudio::SetImageSource(in_srcID, in_info, in_name.c_str(), in_AuxBusID, in_gameObjectID);
+  }));
+  function("SpatialAudio_RemoveImageSource", &AK::SpatialAudio::RemoveImageSource);
+  function("SpatialAudio_ClearImageSources", &AK::SpatialAudio::ClearImageSources);
+
+  // Geometry
+  function("SpatialAudio_SetGeometry", &AK::SpatialAudio::SetGeometry);
+  function("SpatialAudio_RemoveGeometry", &AK::SpatialAudio::RemoveGeometry);
+  function("SpatialAudio_SetGeometryInstance", &AK::SpatialAudio::SetGeometryInstance);
+  function("SpatialAudio_RemoveGeometryInstance", &AK::SpatialAudio::RemoveGeometryInstance);
+  // FIXME: non-const lvalue reference cannot bind to a temporary
+  // function("SpatialAudio_QueryReflectionPaths", &AK::SpatialAudio::QueryReflectionPaths, allow_raw_pointers());
+
+  // Rooms and Portals
+  function("SetRoom", optional_override([](AkRoomID in_RoomID, const AkRoomParams &in_Params, const std::string& in_RoomName=nullptr) {
+    return AK::SpatialAudio::SetRoom(in_RoomID, in_Params, in_RoomName.c_str());
+  }));
+  function("RemoveRoom", &AK::SpatialAudio::RemoveRoom);
+  function("SetPortal", optional_override([](AkPortalID in_PortalID, const AkPortalParams &in_Params, const std::string& in_PortalName=nullptr) {
+    return AK::SpatialAudio::SetPortal(in_PortalID, in_Params, in_PortalName.c_str());
+  }));
+  function("RemovePortal", &AK::SpatialAudio::RemovePortal);
+  function("SetGameObjectInRoom", &AK::SpatialAudio::SetGameObjectInRoom);
+  function("SetReflectionsOrder", &AK::SpatialAudio::SetReflectionsOrder);
+  function("SetDiffractionOrder", &AK::SpatialAudio::SetDiffractionOrder);
+  function("SetNumberOfPrimaryRays", &AK::SpatialAudio::SetNumberOfPrimaryRays);
+  function("SetLoadBalancingSpread", &AK::SpatialAudio::SetLoadBalancingSpread);
+  function("SetEarlyReflectionsAuxSend", &AK::SpatialAudio::SetEarlyReflectionsAuxSend);
+  function("SetEarlyReflectionsVolume", &AK::SpatialAudio::SetEarlyReflectionsVolume);
+  function("SetPortalObstructionAndOcclusion", &AK::SpatialAudio::SetPortalObstructionAndOcclusion);
+  function("SetGameObjectToPortalObstruction", &AK::SpatialAudio::SetGameObjectToPortalObstruction);
+  function("SetPortalToPortalObstruction", &AK::SpatialAudio::SetPortalToPortalObstruction);
+  // FIXME: non-const lvalue reference cannot bind to a temporary
+  // function("QueryWetDiffraction", &AK::SpatialAudio::QueryWetDiffraction);
+  // function("QueryDiffractionPaths", &AK::SpatialAudio::QueryDiffractionPaths);
+  function("ResetStochasticEngine", &AK::SpatialAudio::ResetStochasticEngine);
+
+  // TODO: kOutdoorRoomID
+
+  /**
+  * SpatialAudio::ReverbEstimation
+  */
+
+  function("CalculateSlope", &AK::SpatialAudio::ReverbEstimation::CalculateSlope);
+  // FIXME: non-const lvalue reference cannot bind to a temporary
+  // function("GetAverageAbsorptionValues", &AK::SpatialAudio::ReverbEstimation::GetAverageAbsorptionValues, allow_raw_pointers());
+  // function("EstimateT60Decay", &AK::SpatialAudio::ReverbEstimation::EstimateT60Decay);
+  // function("EstimateTimeToFirstReflection", &AK::SpatialAudio::ReverbEstimation::EstimateTimeToFirstReflection);
+  // function("EstimateHFDamping", &AK::SpatialAudio::ReverbEstimation::EstimateHFDamping, allow_raw_pointers());
+
+  /**
   * StreamMgr
   */
 
@@ -580,24 +648,21 @@ EMSCRIPTEN_BINDINGS(my_module) {
     return AK_Success;
   }));
 
-  /**
-  * Spatial Audio
-  */
-
-  // Initialization
-  function("SpatialAudio_Init", optional_override([]() {
-    AkSpatialAudioInitSettings settings; // The constructor fills AkSpatialAudioInitSettings with the recommended default settings.
-    if (AK::SpatialAudio::Init(settings) != AK_Success) {
-      emscripten_run_script("console.error('Could not create the Spatial Audio.')");
-      return AK_Fail;
-    }
-
-    return AK_Success;
+  // Language Management
+  function("StreamMgr_SetCurrentLanguage", optional_override([](const std::string& in_pszLanguageName) {
+    return AK::StreamMgr::SetCurrentLanguage(in_pszLanguageName.c_str());
   }));
+  function("StreamMgr_GetCurrentLanguage", optional_override([]() {
+    return std::string(AK::StreamMgr::GetCurrentLanguage());
+  }));
+  // XXX: Callback related
+  // function("StreamMgr_AddLanguageChangeObserver", &AK::StreamMgr::AddLanguageChangeObserver);
+  // function("StreamMgr_RemoveLanguageChangeObserver", &AK::StreamMgr::RemoveLanguageChangeObserver);
+
 }
 
 
-
+// XXX: Are these memory allocation hooks usable on web for AkMemSettings?
 // .field("pfInitForThread", &AkMemSettings::pfInitForThread, allow_raw_pointers())
 // .field("pfTermForThread", &AkMemSettings::pfTermForThread, allow_raw_pointers())
 // .field("pfMalloc", &AkMemSettings::pfMalloc, allow_raw_pointers())
