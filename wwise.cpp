@@ -604,14 +604,14 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // }));
 
   // Game Syncs
-  // FIXME: Technically works but behavior is incorrect, always returns AK_Success even if given non-existent RTPC name.
-  function("SoundEngine_Query_GetRTPCValue", optional_override([](const std::string& in_pszRtpcName, AkGameObjectID in_gameObjectID, AkPlayingID in_playingID, val out_rValue, val io_rValueType) {
+  // Need to split up the in/out values for what was originally io_rValueType
+  function("SoundEngine_Query_GetRTPCValue", optional_override([](const std::string& in_pszRtpcName, AkGameObjectID in_gameObjectID, AkPlayingID in_playingID, val out_rValue, AK::SoundEngine::Query::RTPCValue_type in_rValueType, val out_rValueType) {
     AkRtpcValue value;
-    AK::SoundEngine::Query::RTPCValue_type valueType;
+    AK::SoundEngine::Query::RTPCValue_type valueType = in_rValueType;
     AKRESULT result = AK::SoundEngine::Query::GetRTPCValue(in_pszRtpcName.c_str(), in_gameObjectID, in_playingID, value, valueType);
     if (result == AK_Success) {
       out_rValue.set("val", val(value));
-      io_rValueType.set("val", val(valueType));
+      out_rValueType.set("val", val(valueType));
     }
     return result;
   }));
