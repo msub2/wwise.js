@@ -497,7 +497,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SoundEngine_MuteBackgroundMusic", &AK::SoundEngine::MuteBackgroundMusic);
   function("SoundEngine_GetBackgroundMusicMute", &AK::SoundEngine::GetBackgroundMusicMute);
   // XXX: Is this applicable on the web?
-  //function("SendPluginCustomGameData", &AK::SoundEngine::SendPluginCustomGameData);
+  // function("SendPluginCustomGameData", &AK::SoundEngine::SendPluginCustomGameData);
 
   // Bank Management
   function("SoundEngine_ClearBanks", &AK::SoundEngine::ClearBanks);

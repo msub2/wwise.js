@@ -33,7 +33,6 @@ profile:
 	-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE='["$$Browser"]' -s ALLOW_MEMORY_GROWTH=1 \
 	-s MODULARIZE=1 -s EXPORT_NAME="WwiseModule"
 
-# currently broken, complains about dMalloc, dMalign, and dMalloc being undefined
 release:
 	mkdir -p dist
 	emcc --bind -o dist/wwise.js wwise.cpp \
@@ -48,4 +47,4 @@ release:
 	-s WASM_BIGINT -msse4.1 -msimd128 -fno-rtti -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0 -fPIC \
 	-s LLD_REPORT_UNDEFINED --no-entry -s EXPORTED_RUNTIME_METHODS=getWasmTableEntry,FS_createPreloadedFile -s FILESYSTEM=1 \
 	-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE='["$$Browser"]' -s ALLOW_MEMORY_GROWTH=1 \
-	-s MODULARIZE=1 -s EXPORT_NAME="WwiseModule"
+	-s MODULARIZE=1 -s EXPORT_NAME="WwiseModule" -DAK_OPTIMIZED

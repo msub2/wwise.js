@@ -45,6 +45,8 @@ Throughout development I gradually worked out the incantation to get these bindi
 make debug
 # OR
 make profile
+# OR
+make release
 ```
 
 and you should get a copy of `wwise.js` and `wwise.wasm` in the `dist` folder. The makefile is a bit crude since I don't usually work with C/C++, so if anyone knows how to make it any neater that would be appreciated.
