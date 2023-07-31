@@ -194,6 +194,17 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .property("fGridDuration", &AkSegmentInfo::fGridDuration)
     .property("fGridOffset", &AkSegmentInfo::fGridOffset)
   ;
+  // FIXME: This doesn't seem to want to bind with initialized arrays
+  // class_<AkReflectionPathInfo>("AkReflectionPathInfo")
+  //   .constructor<>()
+  //   .property("imageSource", &AkReflectionPathInfo::imageSource)
+  //   .property("pathPoint", &AkReflectionPathInfo::pathPoint)
+  //   .property("surfaces", &AkReflectionPathInfo::surfaces)
+  //   .property("numPathPoints", &AkReflectionPathInfo::numPathPoints)
+  //   .property("numReflections", &AkReflectionPathInfo::numReflections)
+  //   .property("diffraction", &AkReflectionPathInfo::diffraction)
+  //   .property("level", &AkReflectionPathInfo::level)
+  // ;
   class_<AkTransform>("AkTransform")
     .constructor()
     .property("Position", &AkTransform::Position, select_overload<void(const AkVector&)>(&AkTransform::SetPosition))
@@ -222,6 +233,12 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .function("SetOrientation", select_overload<void(const AkVector&, const AkVector&)>(&AkWorldTransform::SetOrientation))
     .function("Set", select_overload<void(const AkVector64&, const AkVector&, const AkVector&)>(&AkWorldTransform::Set))
   ;
+
+  // Vectors
+  register_vector<AkGameObjectID>("vector<AkGameObjectID>");
+  register_vector<AkReal32>("vector<AkReal32>");
+  register_vector<AK::SpeakerVolumes::VectorPtr>("vector<AK::SpeakerVolumes::VectorPtr>");
+  register_vector<AkReflectionPathInfo>("vector<AkReflectionPathInfo>");
 
   /**
   * MemoryMgr
@@ -320,19 +337,21 @@ EMSCRIPTEN_BINDINGS(my_module) {
     return result;
   }));
   function("SoundEngine_SetPanningRule", &AK::SoundEngine::SetPanningRule);
-  // FIXME: Figure out proper way to bind loudspeaker pair angles
-  // function("SoundEngine_GetSpeakerAngles", optional_override([](val io_pfSpeakerAngles, val io_uNumAngles, val out_fHeightAngle, AkOutputDeviceID in_idOutput=0) {
-  //   AkReal32* out1;
-  //   AkUInt32 out2;
-  //   AkReal32 out3;
-  //   AKRESULT result = AK::SoundEngine::GetSpeakerAngles(out1, out2, out3, in_idOutput);
-  //   if (result == AK_Success) {
-  //     io_pfSpeakerAngles.set("val", val(out1));
-  //     io_uNumAngles.set("val", val(out2));
-  //     out_fHeightAngle.set("val", val(out3));
-  //   }
-  //   return result;
-  // }));
+  function("SoundEngine_GetSpeakerAngles", optional_override([](val io_pfSpeakerAngles, val out_fHeightAngle, AkOutputDeviceID in_idOutput=0) {
+    // Get expected number of angle values
+    AkUInt32 numAngles;
+    AkReal32 heightAngle;
+    AK::SoundEngine::GetSpeakerAngles(NULL, numAngles, heightAngle, in_idOutput);
+
+    // Create a vector of AkReal32 and then pass pointer with .data()
+    std::vector<AkReal32> speakerAngles(numAngles);
+    AKRESULT result = AK::SoundEngine::GetSpeakerAngles(speakerAngles.data(), numAngles, heightAngle, in_idOutput);
+    if (result == AK_Success) {
+      io_pfSpeakerAngles.set("val", val(speakerAngles));
+      out_fHeightAngle.set("val", val(heightAngle));
+    }
+    return result;
+  }));
   // function("SoundEngine_SetSpeakerAngles", &AK::SoundEngine::SetSpeakerAngles, allow_raw_pointers());
   function("SoundEngine_SetVolumeThreshold", &AK::SoundEngine::SetVolumeThreshold);
   function("SoundEngine_SetMaxNumVoicesLimit", &AK::SoundEngine::SetMaxNumVoicesLimit);
@@ -506,9 +525,10 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // function("SoundEngine_UnloadBank", &AK::SoundEngine::UnloadBank);
   // function("SoundEngine_CancelBankCallbackCookie", &AK::SoundEngine::CancelBankCallbackCookie);
   // TODO: Double check how to bind string arrays
-  // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
-  // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
-  // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
+  function("SoundEngine_PrepareBank", optional_override([](AK::SoundEngine::PreparationType in_PreparationType, const std::string& in_pszString, AK::SoundEngine::AkBankContent in_uFlags=AK::SoundEngine::AkBankContent::AkBankContent_All, AkBankType in_bankType=AkBankType_User) {
+    return AK::SoundEngine::PrepareBank(in_PreparationType, in_pszString.c_str(), in_uFlags, in_bankType);
+  }));
+  // XXX: Callback variant
   // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
   function("SoundEngine_ClearPreparedEvents", &AK::SoundEngine::ClearPreparedEvents);
   // TODO: Double check how to bind string arrays
@@ -585,7 +605,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SoundEngine_Query_GetPosition", &AK::SoundEngine::Query::GetPosition);
 
   // Listeners
-  register_vector<AkGameObjectID>("vector<AkGameObjectID>");
   function("SoundEngine_Query_GetListeners", optional_override([](AkGameObjectID in_GameObjectID, val out_ListenerObjectIDs/*, AkUInt32 &oi_uNumListeners*/) {
     // Query required size
     AkUInt32 numListeners;
@@ -601,7 +620,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
   }));
   function("SoundEngine_Query_GetListenerPosition", &AK::SoundEngine::Query::GetListenerPosition, allow_raw_pointers());
   // FIXME: This now runs successfully but throws errors accessing VectorPtrs, look into
-  register_vector<AK::SpeakerVolumes::VectorPtr>("vector<AK::SpeakerVolumes::VectorPtr>");
   function("SoundEngine_Query_GetListenerSpatialization", optional_override([](AkUInt32 in_uIndex, val out_rbSpatialized, val out_pVolumeOffsets, val out_channelConfig) {
     bool spatialized;
     std::vector<AK::SpeakerVolumes::VectorPtr> volumeOffsets(7);
@@ -677,12 +695,13 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SpatialAudio_RemoveGeometry", &AK::SpatialAudio::RemoveGeometry);
   function("SpatialAudio_SetGeometryInstance", &AK::SpatialAudio::SetGeometryInstance);
   function("SpatialAudio_RemoveGeometryInstance", &AK::SpatialAudio::RemoveGeometryInstance);
-  // FIXME: Figure out how to bind array of AkReflectionPathInfos
-  // function("SpatialAudio_QueryReflectionPaths", optional_override([](AkGameObjectID in_gameObjectID, AkUInt32 in_positionIndex, AkVector64 &out_listenerPos, AkVector64 &out_emitterPos, AkReflectionPathInfo *out_aPaths, val io_uArraySize) {
-  //   AkUInt32 arraySize;
-  //   AKRESULT result = AK::SpatialAudio::QueryReflectionPaths(in_gameObjectID, in_positionIndex, out_listenerPos, out_emitterPos, out_aPaths, arraySize);
+  // FIXME: Need to get AkReflectionPathInfo to bind correctly for this function to work
+  // function("SpatialAudio_QueryReflectionPaths", optional_override([](AkGameObjectID in_gameObjectID, AkUInt32 in_positionIndex, AkVector64 &out_listenerPos, AkVector64 &out_emitterPos, val out_aPaths) {
+  //   AkUInt32 arraySize = 8;
+  //   std::vector<AkReflectionPathInfo> paths(arraySize);
+  //   AKRESULT result = AK::SpatialAudio::QueryReflectionPaths(in_gameObjectID, in_positionIndex, out_listenerPos, out_emitterPos, paths.data(), arraySize);
   //   if (result == AK_Success) {
-  //     io_uArraySize.set("val", val(arraySize));
+  //     out_aPaths.set("val", val(paths));
   //   }
   //   return result;
   // }));
@@ -714,7 +733,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
     }
     return result;
   }));
-  // FIXME: Figure out how to bind array of AkDiffractionPathInfos
+  // FIXME: Figure out how to bind array of AkDiffractionPathInfos, likely similar situation to AkRefractionPathInfo
   // function("SpatialAudio_QueryDiffractionPaths", optional_override([](AkGameObjectID in_gameObjectID, AkUInt32 in_positionIndex, AkVector64 &out_listenerPos, AkVector64 &out_emitterPos, AkDiffractionPathInfo *out_aPaths, val io_uArraySize) {
   //   AkUInt32 arraySize;
   //   AKRESULT result = AK::SpatialAudio::QueryDiffractionPaths(in_gameObjectID, in_positionIndex, out_listenerPos, out_emitterPos, out_aPaths, arraySize);
@@ -725,7 +744,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // }));
   function("SpatialAudio_ResetStochasticEngine", &AK::SpatialAudio::ResetStochasticEngine);
 
-  // TODO: kOutdoorRoomID
+  // XXX: Does this need to be exposed?
+  constant("kOutdoorRoomID", AK::SpatialAudio::kOutdoorRoomID);
 
   /**
   * SpatialAudio::ReverbEstimation
