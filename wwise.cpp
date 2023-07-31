@@ -392,24 +392,24 @@ EMSCRIPTEN_BINDINGS(my_module) {
   }));
 
   // Environments
-  function("SetGameObjectAuxSendValues", &AK::SoundEngine::SetGameObjectAuxSendValues, allow_raw_pointers());
+  function("SoundEngine_SetGameObjectAuxSendValues", &AK::SoundEngine::SetGameObjectAuxSendValues, allow_raw_pointers());
   // TODO: Look into binding callbacks, if possible
   // function("RegisterBusMeteringCallback", &AK::SoundEngine::RegisterBusMeteringCallback);
   // function("RegisterOutputDeviceMeteringCallback", &AK::SoundEngine::RegisterOutputDeviceMeteringCallback);
-  function("SetGameObjectOutputBusVolume", &AK::SoundEngine::SetGameObjectOutputBusVolume);
-  function("SetActorMixerEffect", &AK::SoundEngine::SetActorMixerEffect);
-  function("SetBusEffect", optional_override([](const std::string& in_pszBusName, AkUInt32 in_uFXIndex, AkUniqueID in_shareSetID) {
+  function("SoundEngine_SetGameObjectOutputBusVolume", &AK::SoundEngine::SetGameObjectOutputBusVolume);
+  function("SoundEngine_SetActorMixerEffect", &AK::SoundEngine::SetActorMixerEffect);
+  function("SoundEngine_SetBusEffect", optional_override([](const std::string& in_pszBusName, AkUInt32 in_uFXIndex, AkUniqueID in_shareSetID) {
     return AK::SoundEngine::SetBusEffect(in_pszBusName.c_str(), in_uFXIndex, in_shareSetID);
   }));
-  function("SetOutputDeviceEffect", &AK::SoundEngine::SetOutputDeviceEffect);
-  function("SetMixer", optional_override([](const std::string& in_pszBusName, AkUniqueID in_shareSetID) {
+  function("SoundEngine_SetOutputDeviceEffect", &AK::SoundEngine::SetOutputDeviceEffect);
+  function("SoundEngine_SetMixer", optional_override([](const std::string& in_pszBusName, AkUniqueID in_shareSetID) {
     return AK::SoundEngine::SetMixer(in_pszBusName.c_str(), in_shareSetID);
   }));
-  function("SetBusConfig", optional_override([](const std::string& in_pszBusName, AkChannelConfig in_channelConfig) {
+  function("SoundEngine_SetBusConfig", optional_override([](const std::string& in_pszBusName, AkChannelConfig in_channelConfig) {
     return AK::SoundEngine::SetBusConfig(in_pszBusName.c_str(), in_channelConfig);
   }));
-  function("SetObjectObstructionAndOcclusion", &AK::SoundEngine::SetObjectObstructionAndOcclusion);
-  function("SetMultipleObstructionAndOcclusion", &AK::SoundEngine::SetMultipleObstructionAndOcclusion, allow_raw_pointers());
+  function("SoundEngine_SetObjectObstructionAndOcclusion", &AK::SoundEngine::SetObjectObstructionAndOcclusion);
+  function("SoundEngine_SetMultipleObstructionAndOcclusion", &AK::SoundEngine::SetMultipleObstructionAndOcclusion, allow_raw_pointers());
   // XXX: Are these applicable to web?
   // function("GetContainerHistory", &AK::SoundEngine::GetContainerHistory);
   // function("SetContainerHistory", &AK::SoundEngine::SetContainerHistory);
@@ -428,18 +428,18 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SoundEngine_PostEvent", optional_override([](const std::string& eventName, AkGameObjectID gameObjectID) {
     return AK::SoundEngine::PostEvent(eventName.c_str(), gameObjectID);
   }), allow_raw_pointers());
-  function("ExecuteActionOnEvent", optional_override([](const std::string& in_pszEventName, AK::SoundEngine::AkActionOnEventType in_ActionType, AkGameObjectID in_gameObjectID=AK_INVALID_GAME_OBJECT, AkTimeMs in_uTransitionDuration=0, AkCurveInterpolation in_eFadeCurve=AkCurveInterpolation_Linear, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
+  function("SoundEngine_ExecuteActionOnEvent", optional_override([](const std::string& in_pszEventName, AK::SoundEngine::AkActionOnEventType in_ActionType, AkGameObjectID in_gameObjectID=AK_INVALID_GAME_OBJECT, AkTimeMs in_uTransitionDuration=0, AkCurveInterpolation in_eFadeCurve=AkCurveInterpolation_Linear, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
     return AK::SoundEngine::ExecuteActionOnEvent(in_pszEventName.c_str(), in_ActionType, in_gameObjectID, in_uTransitionDuration, in_eFadeCurve, in_PlayingID);
   }));
-  function("PostMIDIOnEvent", &AK::SoundEngine::PostMIDIOnEvent, allow_raw_pointers());
-  function("StopMIDIOnEvent", &AK::SoundEngine::StopMIDIOnEvent);
+  function("SoundEngine_PostMIDIOnEvent", &AK::SoundEngine::PostMIDIOnEvent, allow_raw_pointers());
+  function("SoundEngine_StopMIDIOnEvent", &AK::SoundEngine::StopMIDIOnEvent);
   function("PinEventInStreamCache", optional_override([](const std::string& in_pszEventName, AkPriority in_uActivePriority, AkPriority in_uInactivePriority) {
     return AK::SoundEngine::PinEventInStreamCache(in_pszEventName.c_str(), in_uActivePriority, in_uInactivePriority);
   }));
-  function("UnpinEventInStreamCache", optional_override([](const std::string& in_pszEventName) {
+  function("SoundEngine_UnpinEventInStreamCache", optional_override([](const std::string& in_pszEventName) {
     return AK::SoundEngine::UnpinEventInStreamCache(in_pszEventName.c_str());
   }));
-  function("GetBufferStatusForPinnedEvent", optional_override([](const std::string& in_pszEventName, val out_fPercentBuffered, val out_bCachePinnedMemoryFull) {
+  function("SoundEngine_GetBufferStatusForPinnedEvent", optional_override([](const std::string& in_pszEventName, val out_fPercentBuffered, val out_bCachePinnedMemoryFull) {
     AkReal32 percentBuffered;
     bool cachePinnedMemoryFull;
     AKRESULT result = AK::SoundEngine::GetBufferStatusForPinnedEvent(in_pszEventName.c_str(), percentBuffered, cachePinnedMemoryFull);
@@ -449,19 +449,19 @@ EMSCRIPTEN_BINDINGS(my_module) {
     }
     return result;
   }));
-  function("SeekOnEventPosition", optional_override([](const std::string& in_pszEventName, AkGameObjectID in_gameObjectID, AkTimeMs in_iPosition, bool in_bSeekToNearestMarker=false, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
+  function("SoundEngine_SeekOnEventPosition", optional_override([](const std::string& in_pszEventName, AkGameObjectID in_gameObjectID, AkTimeMs in_iPosition, bool in_bSeekToNearestMarker=false, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
     return AK::SoundEngine::SeekOnEvent(in_pszEventName.c_str(), in_gameObjectID, in_iPosition, in_bSeekToNearestMarker, in_PlayingID);
   }));
-  function("SeekOnEventPercent", optional_override([](const std::string& in_pszEventName, AkGameObjectID in_gameObjectID, AkReal32 in_fPercent, bool in_bSeekToNearestMarker=false, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
+  function("SoundEngine_SeekOnEventPercent", optional_override([](const std::string& in_pszEventName, AkGameObjectID in_gameObjectID, AkReal32 in_fPercent, bool in_bSeekToNearestMarker=false, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
     return AK::SoundEngine::SeekOnEvent(in_pszEventName.c_str(), in_gameObjectID, in_fPercent, in_bSeekToNearestMarker, in_PlayingID);
   }));
   // XXX: Look into callbacks
   // function("CancelEventCallbackCookie", &AK::SoundEngine::CancelEventCallbackCookie);
   // function("CancelEventCallbackGameObject", &AK::SoundEngine::CancelEventCallbackGameObject);
   // function("CancelEventCallback", &AK::SoundEngine::CancelEventCallback);
-  function("GetSourcePlayPosition", &AK::SoundEngine::GetSourcePlayPosition, allow_raw_pointers());
-  function("GetSourcePlayPositions", &AK::SoundEngine::GetSourcePlayPositions, allow_raw_pointers());
-  function("GetSourceStreamBuffering", optional_override([](AkPlayingID in_PlayingID, val out_buffering, val out_bIsBuffering) {
+  function("SoundEngine_GetSourcePlayPosition", &AK::SoundEngine::GetSourcePlayPosition, allow_raw_pointers());
+  function("SoundEngine_GetSourcePlayPositions", &AK::SoundEngine::GetSourcePlayPositions, allow_raw_pointers());
+  function("SoundEngine_GetSourceStreamBuffering", optional_override([](AkPlayingID in_PlayingID, val out_buffering, val out_bIsBuffering) {
     AkTimeMs buffering;
     bool isBuffering;
     AKRESULT result = AK::SoundEngine::GetSourceStreamBuffering(in_PlayingID, buffering, isBuffering);
@@ -471,12 +471,12 @@ EMSCRIPTEN_BINDINGS(my_module) {
     }
     return result;
   }));
-  function("StopAll", &AK::SoundEngine::StopAll);
-  function("StopPlayingID", &AK::SoundEngine::StopPlayingID);
-  function("ExecuteActionOnPlayingID", &AK::SoundEngine::ExecuteActionOnPlayingID);
-  function("SetRandomSeed", &AK::SoundEngine::SetRandomSeed);
-  function("MuteBackgroundMusic", &AK::SoundEngine::MuteBackgroundMusic);
-  function("GetBackgroundMusicMute", &AK::SoundEngine::GetBackgroundMusicMute);
+  function("SoundEngine_StopAll", &AK::SoundEngine::StopAll);
+  function("SoundEngine_StopPlayingID", &AK::SoundEngine::StopPlayingID);
+  function("SoundEngine_ExecuteActionOnPlayingID", &AK::SoundEngine::ExecuteActionOnPlayingID);
+  function("SoundEngine_SetRandomSeed", &AK::SoundEngine::SetRandomSeed);
+  function("SoundEngine_MuteBackgroundMusic", &AK::SoundEngine::MuteBackgroundMusic);
+  function("SoundEngine_GetBackgroundMusicMute", &AK::SoundEngine::GetBackgroundMusicMute);
   // XXX: Is this applicable on the web?
   //function("SendPluginCustomGameData", &AK::SoundEngine::SendPluginCustomGameData);
 
@@ -582,26 +582,38 @@ EMSCRIPTEN_BINDINGS(my_module) {
   ;
 
   // Game Objects
-  function("GetPosition", &AK::SoundEngine::Query::GetPosition);
+  function("SoundEngine_Query_GetPosition", &AK::SoundEngine::Query::GetPosition);
 
   // Listeners
+  register_vector<AkGameObjectID>("vector<AkGameObjectID>");
+  function("SoundEngine_Query_GetListeners", optional_override([](AkGameObjectID in_GameObjectID, val out_ListenerObjectIDs/*, AkUInt32 &oi_uNumListeners*/) {
+    // Query required size
+    AkUInt32 numListeners;
+    AK::SoundEngine::Query::GetListeners(in_GameObjectID, NULL, numListeners);
 
-  // FIXME: Need to bind array for game object IDs
-  // function("GetListeners", &AK::SoundEngine::Query::GetListeners, allow_raw_pointers());
+    // Create a vector of AkGameObjectIDs and then pass pointer with .data()
+    std::vector<AkGameObjectID> listenerObjects(numListeners);
+    AKRESULT result = AK::SoundEngine::Query::GetListeners(in_GameObjectID, listenerObjects.data(), numListeners);
+    if (result == AK_Success) {
+      out_ListenerObjectIDs.set("val", val(listenerObjects));
+    }
+    return result;
+  }));
   function("SoundEngine_Query_GetListenerPosition", &AK::SoundEngine::Query::GetListenerPosition, allow_raw_pointers());
-  // FIXME: Need to bind array for volume offsets
-  // function("GetListenerSpatialization", optional_override([](AkUInt32 in_uIndex, val out_rbSpatialized, val out_pVolumeOffsets, val out_channelConfig) {
-  //   bool spatialized;
-  //   AK::SpeakerVolumes::VectorPtr volumeOffsets;
-  //   AkChannelConfig channelConfig;
-  //   AKRESULT result = AK::SoundEngine::Query::GetListenerSpatialization(in_uIndex, spatialized, volumeOffsets, channelConfig);
-  //   if (result == AK_Success) {
-  //     out_rbSpatialized.set("val", val(spatialized));
-  //     out_pVolumeOffsets.set("val", val(volumeOffsets));
-  //     out_channelConfig.set("val", val(channelConfig));
-  //   }
-  //   return result;
-  // }));
+  // FIXME: This now runs successfully but throws errors accessing VectorPtrs, look into
+  register_vector<AK::SpeakerVolumes::VectorPtr>("vector<AK::SpeakerVolumes::VectorPtr>");
+  function("SoundEngine_Query_GetListenerSpatialization", optional_override([](AkUInt32 in_uIndex, val out_rbSpatialized, val out_pVolumeOffsets, val out_channelConfig) {
+    bool spatialized;
+    std::vector<AK::SpeakerVolumes::VectorPtr> volumeOffsets(7);
+    AkChannelConfig channelConfig;
+    AKRESULT result = AK::SoundEngine::Query::GetListenerSpatialization(in_uIndex, spatialized, volumeOffsets[0], channelConfig);
+    if (result == AK_Success) {
+      out_rbSpatialized.set("val", val(spatialized));
+      out_pVolumeOffsets.set("val", val(volumeOffsets));
+      out_channelConfig.set("val", val(channelConfig));
+    }
+    return result;
+  }));
 
   // Game Syncs
   // Need to split up the in/out values for what was originally io_rValueType
