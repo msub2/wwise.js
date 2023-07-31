@@ -676,25 +676,25 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // }));
 
   // Rooms and Portals
-  function("SoundEngine_SpatialAudio_SetRoom", optional_override([](AkRoomID in_RoomID, const AkRoomParams &in_Params, const std::string& in_RoomName=nullptr) {
-    return AK::SoundEngine_SpatialAudio_SpatialAudio::SetRoom(in_RoomID, in_Params, in_RoomName.c_str());
+  function("SpatialAudio_SetRoom", optional_override([](AkRoomID in_RoomID, const AkRoomParams &in_Params, const std::string& in_RoomName=nullptr) {
+    return AK::SpatialAudio::SetRoom(in_RoomID, in_Params, in_RoomName.c_str());
   }));
-  function("SoundEngine_SpatialAudio_RemoveRoom", &AK::SpatialAudio::RemoveRoom);
-  function("SoundEngine_SpatialAudio_SetPortal", optional_override([](AkPortalID in_PortalID, const AkPortalParams &in_Params, const std::string& in_PortalName=nullptr) {
-    return AK::SoundEngine_SpatialAudio_SpatialAudio::SetPortal(in_PortalID, in_Params, in_PortalName.c_str());
+  function("SpatialAudio_RemoveRoom", &AK::SpatialAudio::RemoveRoom);
+  function("SpatialAudio_SetPortal", optional_override([](AkPortalID in_PortalID, const AkPortalParams &in_Params, const std::string& in_PortalName=nullptr) {
+    return AK::SpatialAudio::SetPortal(in_PortalID, in_Params, in_PortalName.c_str());
   }));
-  function("SoundEngine_SpatialAudio_RemovePortal", &AK::SpatialAudio::RemovePortal);
-  function("SoundEngine_SpatialAudio_SetGameObjectInRoom", &AK::SpatialAudio::SetGameObjectInRoom);
-  function("SoundEngine_SpatialAudio_SetReflectionsOrder", &AK::SpatialAudio::SetReflectionsOrder);
-  function("SoundEngine_SpatialAudio_SetDiffractionOrder", &AK::SpatialAudio::SetDiffractionOrder);
-  function("SoundEngine_SpatialAudio_SetNumberOfPrimaryRays", &AK::SpatialAudio::SetNumberOfPrimaryRays);
-  function("SoundEngine_SpatialAudio_SetLoadBalancingSpread", &AK::SpatialAudio::SetLoadBalancingSpread);
-  function("SoundEngine_SpatialAudio_SetEarlyReflectionsAuxSend", &AK::SpatialAudio::SetEarlyReflectionsAuxSend);
-  function("SoundEngine_SpatialAudio_SetEarlyReflectionsVolume", &AK::SpatialAudio::SetEarlyReflectionsVolume);
-  function("SoundEngine_SpatialAudio_SetPortalObstructionAndOcclusion", &AK::SpatialAudio::SetPortalObstructionAndOcclusion);
-  function("SoundEngine_SpatialAudio_SetGameObjectToPortalObstruction", &AK::SpatialAudio::SetGameObjectToPortalObstruction);
-  function("SoundEngine_SpatialAudio_SetPortalToPortalObstruction", &AK::SpatialAudio::SetPortalToPortalObstruction);
-  function("SoundEngine_SpatialAudio_QueryWetDiffraction", optional_override([](AkPortalID in_portal, val out_wetDiffraction) {
+  function("SpatialAudio_RemovePortal", &AK::SpatialAudio::RemovePortal);
+  function("SpatialAudio_SetGameObjectInRoom", &AK::SpatialAudio::SetGameObjectInRoom);
+  function("SpatialAudio_SetReflectionsOrder", &AK::SpatialAudio::SetReflectionsOrder);
+  function("SpatialAudio_SetDiffractionOrder", &AK::SpatialAudio::SetDiffractionOrder);
+  function("SpatialAudio_SetNumberOfPrimaryRays", &AK::SpatialAudio::SetNumberOfPrimaryRays);
+  function("SpatialAudio_SetLoadBalancingSpread", &AK::SpatialAudio::SetLoadBalancingSpread);
+  function("SpatialAudio_SetEarlyReflectionsAuxSend", &AK::SpatialAudio::SetEarlyReflectionsAuxSend);
+  function("SpatialAudio_SetEarlyReflectionsVolume", &AK::SpatialAudio::SetEarlyReflectionsVolume);
+  function("SpatialAudio_SetPortalObstructionAndOcclusion", &AK::SpatialAudio::SetPortalObstructionAndOcclusion);
+  function("SpatialAudio_SetGameObjectToPortalObstruction", &AK::SpatialAudio::SetGameObjectToPortalObstruction);
+  function("SpatialAudio_SetPortalToPortalObstruction", &AK::SpatialAudio::SetPortalToPortalObstruction);
+  function("SpatialAudio_QueryWetDiffraction", optional_override([](AkPortalID in_portal, val out_wetDiffraction) {
     AkReal32 wetDiffraction;
     AKRESULT result = AK::SpatialAudio::QueryWetDiffraction(in_portal, wetDiffraction);
     if (result == AK_Success) {
@@ -703,7 +703,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
     return result;
   }));
   // FIXME: Figure out how to bind array of AkDiffractionPathInfos
-  // function("QueryDiffractionPaths", optional_override([](AkGameObjectID in_gameObjectID, AkUInt32 in_positionIndex, AkVector64 &out_listenerPos, AkVector64 &out_emitterPos, AkDiffractionPathInfo *out_aPaths, val io_uArraySize) {
+  // function("SpatialAudio_QueryDiffractionPaths", optional_override([](AkGameObjectID in_gameObjectID, AkUInt32 in_positionIndex, AkVector64 &out_listenerPos, AkVector64 &out_emitterPos, AkDiffractionPathInfo *out_aPaths, val io_uArraySize) {
   //   AkUInt32 arraySize;
   //   AKRESULT result = AK::SpatialAudio::QueryDiffractionPaths(in_gameObjectID, in_positionIndex, out_listenerPos, out_emitterPos, out_aPaths, arraySize);
   //   if (result == AK_Success) {
@@ -711,7 +711,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
   //   }
   //   return result;
   // }));
-  function("SoundEngine_SpatialAudio_ResetStochasticEngine", &AK::SpatialAudio::ResetStochasticEngine);
+  function("SpatialAudio_ResetStochasticEngine", &AK::SpatialAudio::ResetStochasticEngine);
 
   // TODO: kOutdoorRoomID
 
