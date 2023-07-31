@@ -111,6 +111,18 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .value("FilePermissionError", AK_FilePermissionError) 	///< The file access permissions prevent opening a file.
     .value("UnknownFileError", AK_UnknownFileError)	///< Rare file error occured, as opposed to AK_FileNotFound or AK_FilePermissionError. This lumps all unrecognized OS file system errors.
   ;
+  enum_<AK::AkChannelOrdering>("AkChannelOrdering")
+    .value("Standard", AK::AkChannelOrdering::ChannelOrdering_Standard)
+    .value("RunTime", AK::AkChannelOrdering::ChannelOrdering_RunTime)
+  ;
+  enum_<AkChannelConfigType>("AkChannelConfigType")
+    .value("Anonymous", AK_ChannelConfigType_Anonymous)
+    .value("Standard", AK_ChannelConfigType_Standard)
+    .value("Ambisonic", AK_ChannelConfigType_Ambisonic)
+    .value("Objects", AK_ChannelConfigType_Objects)
+    .value("UseDeviceMain", AK_ChannelConfigType_UseDeviceMain)
+    .value("UseDevicePassthrough", AK_ChannelConfigType_UseDevicePassthrough)
+  ;
   enum_<AkCurveInterpolation>("AkCurveInterpolation")
     .value("Log3", AkCurveInterpolation_Log3)
     .value("Sine", AkCurveInterpolation_Sine)
@@ -299,10 +311,28 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SoundEngine_GetAudioSettings", &AK::SoundEngine::GetAudioSettings);
   function("SoundEngine_GetSpeakerConfiguration", &AK::SoundEngine::GetSpeakerConfiguration);
   function("SoundEngine_GetOutputDeviceConfiguration", &AK::SoundEngine::GetOutputDeviceConfiguration);
-  // FIXME: these all throw "non-const lvalue reference to type <type> cannot bind to a temporary of type <type> on make
-  // function("SoundEngine_GetPanningRule", &AK::SoundEngine::GetPanningRule);
-  // function("SoundEngine_SetPanningRule", &AK::SoundEngine::SetPanningRule);
-  // function("SoundEngine_GetSpeakerAngles", &AK::SoundEngine::GetSpeakerAngles, allow_raw_pointers());
+  function("SoundEngine_GetPanningRule", optional_override([](val out_ePanningRule, AkOutputDeviceID in_idOutput = 0) {
+    AkPanningRule out;
+    AKRESULT result = AK::SoundEngine::GetPanningRule(out, in_idOutput);
+    if (result == AK_Success) {
+      out_ePanningRule.set("val", val(out));
+    }
+    return result;
+  }));
+  function("SoundEngine_SetPanningRule", &AK::SoundEngine::SetPanningRule);
+  // FIXME: Figure out proper way to bind loudspeaker pair angles
+  // function("SoundEngine_GetSpeakerAngles", optional_override([](val io_pfSpeakerAngles, val io_uNumAngles, val out_fHeightAngle, AkOutputDeviceID in_idOutput=0) {
+  //   AkReal32* out1;
+  //   AkUInt32 out2;
+  //   AkReal32 out3;
+  //   AKRESULT result = AK::SoundEngine::GetSpeakerAngles(out1, out2, out3, in_idOutput);
+  //   if (result == AK_Success) {
+  //     io_pfSpeakerAngles.set("val", val(out1));
+  //     io_uNumAngles.set("val", val(out2));
+  //     out_fHeightAngle.set("val", val(out3));
+  //   }
+  //   return result;
+  // }));
   // function("SoundEngine_SetSpeakerAngles", &AK::SoundEngine::SetSpeakerAngles, allow_raw_pointers());
   function("SoundEngine_SetVolumeThreshold", &AK::SoundEngine::SetVolumeThreshold);
   function("SoundEngine_SetMaxNumVoicesLimit", &AK::SoundEngine::SetMaxNumVoicesLimit);
@@ -409,10 +439,16 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("UnpinEventInStreamCache", optional_override([](const std::string& in_pszEventName) {
     return AK::SoundEngine::UnpinEventInStreamCache(in_pszEventName.c_str());
   }));
-  // FIXME: non-const lvalue reference to type 'float' cannot bind to a temporary of type 'float'
-  // function("GetBufferStatusForPinnedEvent", optional_override([](const std::string& in_pszEventName, AkReal32 &out_fPercentBuffered, bool &out_bCachePinnedMemoryFull) {
-  //   return AK::SoundEngine::GetBufferStatusForPinnedEvent(in_pszEventName.c_str(), out_fPercentBuffered, out_bCachePinnedMemoryFull);
-  // }));
+  function("GetBufferStatusForPinnedEvent", optional_override([](const std::string& in_pszEventName, val out_fPercentBuffered, val out_bCachePinnedMemoryFull) {
+    AkReal32 percentBuffered;
+    bool cachePinnedMemoryFull;
+    AKRESULT result = AK::SoundEngine::GetBufferStatusForPinnedEvent(in_pszEventName.c_str(), percentBuffered, cachePinnedMemoryFull);
+    if (result == AK_Success) {
+      out_fPercentBuffered.set("val", val(percentBuffered));
+      out_bCachePinnedMemoryFull.set("val", val(cachePinnedMemoryFull));
+    }
+    return result;
+  }));
   function("SeekOnEventPosition", optional_override([](const std::string& in_pszEventName, AkGameObjectID in_gameObjectID, AkTimeMs in_iPosition, bool in_bSeekToNearestMarker=false, AkPlayingID in_PlayingID=AK_INVALID_PLAYING_ID) {
     return AK::SoundEngine::SeekOnEvent(in_pszEventName.c_str(), in_gameObjectID, in_iPosition, in_bSeekToNearestMarker, in_PlayingID);
   }));
@@ -425,8 +461,16 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // function("CancelEventCallback", &AK::SoundEngine::CancelEventCallback);
   function("GetSourcePlayPosition", &AK::SoundEngine::GetSourcePlayPosition, allow_raw_pointers());
   function("GetSourcePlayPositions", &AK::SoundEngine::GetSourcePlayPositions, allow_raw_pointers());
-  // FIXME: non-const lvalue reference to type 'int' cannot bind to a temporary of type 'int'
-  // function("GetSourceStreamBuffering", &AK::SoundEngine::GetSourceStreamBuffering);
+  function("GetSourceStreamBuffering", optional_override([](AkPlayingID in_PlayingID, val out_buffering, val out_bIsBuffering) {
+    AkTimeMs buffering;
+    bool isBuffering;
+    AKRESULT result = AK::SoundEngine::GetSourceStreamBuffering(in_PlayingID, buffering, isBuffering);
+    if (result == AK_Success) {
+      out_buffering.set("val", val(buffering));
+      out_bIsBuffering.set("val", val(isBuffering));
+    }
+    return result;
+  }));
   function("StopAll", &AK::SoundEngine::StopAll);
   function("StopPlayingID", &AK::SoundEngine::StopPlayingID);
   function("ExecuteActionOnPlayingID", &AK::SoundEngine::ExecuteActionOnPlayingID);
@@ -494,9 +538,22 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // function("SoundEngine_DynamicDialogue_ResolveDialogueEvent", optional_override([](const char *in_pszEventName, const char **in_aArgumentValueNames, AkUInt32 in_uNumArguments, AkPlayingID in_idSequence=AK_INVALID_PLAYING_ID, AkCandidateCallbackFunc in_candidateCallbackFunc=NULL, void *in_pCookie=NULL) {
   //   return AK::SoundEngine::DynamicDialogue::ResolveDialogueEvent();
   // }));
-  // FIXME: non-const lvalue reference to type 'int/float' cannot bind to a temporary of type 'int/float'
-  // function("SoundEngine_DynamicDialogue_GetDialogueEventCustomPropertyValueInt", select_overload<AKRESULT(AkUniqueID, AkUInt32, AkInt32&)>(&AK::SoundEngine::DynamicDialogue::GetDialogueEventCustomPropertyValue));
-  // function("SoundEngine_DynamicDialogue_GetDialogueEventCustomPropertyValueFloat", select_overload<AKRESULT(AkUniqueID, AkUInt32, AkReal32&)>(&AK::SoundEngine::DynamicDialogue::GetDialogueEventCustomPropertyValue));
+  function("SoundEngine_DynamicDialogue_GetDialogueEventCustomPropertyValueInt", optional_override([](AkUniqueID in_eventID, AkUInt32 in_uPropID, val out_iValue) {
+    AkInt32 value;
+    AKRESULT result = AK::SoundEngine::DynamicDialogue::GetDialogueEventCustomPropertyValue(in_eventID, in_uPropID, value);
+    if (result == AK_Success) {
+      out_iValue.set("val", val(value));
+    }
+    return result;
+  }));
+  function("SoundEngine_DynamicDialogue_GetDialogueEventCustomPropertyValueFloat", optional_override([](AkUniqueID in_eventID, AkUInt32 in_uPropID, val out_fValue) {
+    AkReal32 value;
+    AKRESULT result = AK::SoundEngine::DynamicDialogue::GetDialogueEventCustomPropertyValue(in_eventID, in_uPropID, value);
+    if (result == AK_Success) {
+      out_fValue.set("val", val(value));
+    }
+    return result;
+  }));
 
   /**
   * SoundEngine::DynamicSequence
@@ -529,23 +586,51 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
   // Listeners
 
-  // FIXME: non-const lvalue reference to type 'unsigned int' cannot bind to a temporary of type 'unsigned int'
+  // FIXME: Need to bind array for game object IDs
   // function("GetListeners", &AK::SoundEngine::Query::GetListeners, allow_raw_pointers());
   function("SoundEngine_Query_GetListenerPosition", &AK::SoundEngine::Query::GetListenerPosition, allow_raw_pointers());
-  // FIXME: non-const lvalue reference to type 'bool' cannot bind to a temporary of type 'bool'
-  // function("GetListenerSpatialization", &AK::SoundEngine::Query::GetListenerSpatialization);
+  // FIXME: Need to bind array for volume offsets
+  // function("GetListenerSpatialization", optional_override([](AkUInt32 in_uIndex, val out_rbSpatialized, val out_pVolumeOffsets, val out_channelConfig) {
+  //   bool spatialized;
+  //   AK::SpeakerVolumes::VectorPtr volumeOffsets;
+  //   AkChannelConfig channelConfig;
+  //   AKRESULT result = AK::SoundEngine::Query::GetListenerSpatialization(in_uIndex, spatialized, volumeOffsets, channelConfig);
+  //   if (result == AK_Success) {
+  //     out_rbSpatialized.set("val", val(spatialized));
+  //     out_pVolumeOffsets.set("val", val(volumeOffsets));
+  //     out_channelConfig.set("val", val(channelConfig));
+  //   }
+  //   return result;
+  // }));
 
   // Game Syncs
-  // FIXME: non-const lvalue reference cannot bind to a temporary
-  // function("SoundEngine_Query_GetRTPCValue", optional_override([](const std::string& in_pszRtpcName, AkGameObjectID in_gameObjectID, AkPlayingID in_playingID, AkRtpcValue &out_rValue, AK::SoundEngine::Query::RTPCValue_type &io_rValueType) {
-  //   return AK::SoundEngine::Query::GetRTPCValue(in_pszRtpcName.c_str(), in_gameObjectID, in_playingID, out_rValue, io_rValueType);
-  // }));
-  // function("SoundEngine_Query_GetSwitch", optional_override([](const std::string& in_pstrSwitchGroupName, AkGameObjectID in_GameObj, AkSwitchStateID &out_rSwitchState) {
-  //   return AK::SoundEngine::Query::GetSwitch(in_pstrSwitchGroupName.c_str(), in_GameObj, out_rSwitchState);
-  // }));
-  // function("SoundEngine_Query_GetState", optional_override([](const std::string& in_pstrStateGroupName, AkStateID &out_rState) {
-  //   return AK::SoundEngine::Query::GetState(in_pstrStateGroupName.c_str(), out_rState);
-  // }));
+  // FIXME: Technically works but behavior is incorrect, always returns AK_Success even if given non-existent RTPC name.
+  function("SoundEngine_Query_GetRTPCValue", optional_override([](const std::string& in_pszRtpcName, AkGameObjectID in_gameObjectID, AkPlayingID in_playingID, val out_rValue, val io_rValueType) {
+    AkRtpcValue value;
+    AK::SoundEngine::Query::RTPCValue_type valueType;
+    AKRESULT result = AK::SoundEngine::Query::GetRTPCValue(in_pszRtpcName.c_str(), in_gameObjectID, in_playingID, value, valueType);
+    if (result == AK_Success) {
+      out_rValue.set("val", val(value));
+      io_rValueType.set("val", val(valueType));
+    }
+    return result;
+  }));
+  function("SoundEngine_Query_GetSwitch", optional_override([](const std::string& in_pstrSwitchGroupName, AkGameObjectID in_GameObj, val out_rSwitchState) {
+    AkSwitchStateID switchState;
+    AKRESULT result = AK::SoundEngine::Query::GetSwitch(in_pstrSwitchGroupName.c_str(), in_GameObj, switchState);
+    if (result == AK_Success) {
+      out_rSwitchState.set("val", val(switchState));
+    }
+    return result;
+  }));
+  function("SoundEngine_Query_GetState", optional_override([](const std::string& in_pstrStateGroupName, val out_rState) {
+    AkStateID state;
+    AKRESULT result = AK::SoundEngine::Query::GetState(in_pstrStateGroupName.c_str(), state);
+    if (result == AK_Success) {
+      out_rState.set("val", val(state));
+    }
+    return result;
+  }));
 
   // Environments
   // TODO: Fill out more after figuring out outvalue binding issue
@@ -580,8 +665,15 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SpatialAudio_RemoveGeometry", &AK::SpatialAudio::RemoveGeometry);
   function("SpatialAudio_SetGeometryInstance", &AK::SpatialAudio::SetGeometryInstance);
   function("SpatialAudio_RemoveGeometryInstance", &AK::SpatialAudio::RemoveGeometryInstance);
-  // FIXME: non-const lvalue reference cannot bind to a temporary
-  // function("SpatialAudio_QueryReflectionPaths", &AK::SpatialAudio::QueryReflectionPaths, allow_raw_pointers());
+  // FIXME: Figure out how to bind array of AkReflectionPathInfos
+  // function("SpatialAudio_QueryReflectionPaths", optional_override([](AkGameObjectID in_gameObjectID, AkUInt32 in_positionIndex, AkVector64 &out_listenerPos, AkVector64 &out_emitterPos, AkReflectionPathInfo *out_aPaths, val io_uArraySize) {
+  //   AkUInt32 arraySize;
+  //   AKRESULT result = AK::SpatialAudio::QueryReflectionPaths(in_gameObjectID, in_positionIndex, out_listenerPos, out_emitterPos, out_aPaths, arraySize);
+  //   if (result == AK_Success) {
+  //     io_uArraySize.set("val", val(arraySize));
+  //   }
+  //   return result;
+  // }));
 
   // Rooms and Portals
   function("SetRoom", optional_override([](AkRoomID in_RoomID, const AkRoomParams &in_Params, const std::string& in_RoomName=nullptr) {
@@ -602,9 +694,23 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("SetPortalObstructionAndOcclusion", &AK::SpatialAudio::SetPortalObstructionAndOcclusion);
   function("SetGameObjectToPortalObstruction", &AK::SpatialAudio::SetGameObjectToPortalObstruction);
   function("SetPortalToPortalObstruction", &AK::SpatialAudio::SetPortalToPortalObstruction);
-  // FIXME: non-const lvalue reference cannot bind to a temporary
-  // function("QueryWetDiffraction", &AK::SpatialAudio::QueryWetDiffraction);
-  // function("QueryDiffractionPaths", &AK::SpatialAudio::QueryDiffractionPaths);
+  function("QueryWetDiffraction", optional_override([](AkPortalID in_portal, val out_wetDiffraction) {
+    AkReal32 wetDiffraction;
+    AKRESULT result = AK::SpatialAudio::QueryWetDiffraction(in_portal, wetDiffraction);
+    if (result == AK_Success) {
+      out_wetDiffraction.set("val", val(wetDiffraction));
+    }
+    return result;
+  }));
+  // FIXME: Figure out how to bind array of AkDiffractionPathInfos
+  // function("QueryDiffractionPaths", optional_override([](AkGameObjectID in_gameObjectID, AkUInt32 in_positionIndex, AkVector64 &out_listenerPos, AkVector64 &out_emitterPos, AkDiffractionPathInfo *out_aPaths, val io_uArraySize) {
+  //   AkUInt32 arraySize;
+  //   AKRESULT result = AK::SpatialAudio::QueryDiffractionPaths(in_gameObjectID, in_positionIndex, out_listenerPos, out_emitterPos, out_aPaths, arraySize);
+  //   if (result == AK_Success) {
+  //     io_uArraySize.set("val", val(arraySize));
+  //   }
+  //   return result;
+  // }));
   function("ResetStochasticEngine", &AK::SpatialAudio::ResetStochasticEngine);
 
   // TODO: kOutdoorRoomID
@@ -614,10 +720,25 @@ EMSCRIPTEN_BINDINGS(my_module) {
   */
 
   function("CalculateSlope", &AK::SpatialAudio::ReverbEstimation::CalculateSlope);
-  // FIXME: non-const lvalue reference cannot bind to a temporary
+  // FIXME: Figure out how to bind input arrays
   // function("GetAverageAbsorptionValues", &AK::SpatialAudio::ReverbEstimation::GetAverageAbsorptionValues, allow_raw_pointers());
-  // function("EstimateT60Decay", &AK::SpatialAudio::ReverbEstimation::EstimateT60Decay);
-  // function("EstimateTimeToFirstReflection", &AK::SpatialAudio::ReverbEstimation::EstimateTimeToFirstReflection);
+  function("EstimateT60Decay", optional_override([](AkReal32 in_volumeCubicMeters, AkReal32 in_surfaceAreaSquaredMeters, AkReal32 in_environmentAverageAbsorption, val out_decayEstimate) {
+    AkReal32 decayEstimate;
+    AKRESULT result = AK::SpatialAudio::ReverbEstimation::EstimateT60Decay(in_volumeCubicMeters, in_surfaceAreaSquaredMeters, in_environmentAverageAbsorption, decayEstimate);
+    if (result == AK_Success) {
+      out_decayEstimate.set("val", val(decayEstimate));
+    }
+    return result;
+  }));
+  function("EstimateTimeToFirstReflection", optional_override([](AkVector in_environmentExtentMeters, val out_timeToFirstReflectionMs, AkReal32 in_speedOfSound=343.0f) {
+    AkReal32 timeToFirstReflectionMs;
+    AKRESULT result = AK::SpatialAudio::ReverbEstimation::EstimateTimeToFirstReflection(in_environmentExtentMeters, timeToFirstReflectionMs, in_speedOfSound);
+    if (result == AK_Success) {
+      out_timeToFirstReflectionMs.set("val", val(timeToFirstReflectionMs));
+    }
+    return result;
+  }));
+  // FIXME: Figure out how to bind input arrays
   // function("EstimateHFDamping", &AK::SpatialAudio::ReverbEstimation::EstimateHFDamping, allow_raw_pointers());
 
   /**
