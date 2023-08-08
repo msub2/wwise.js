@@ -1,5 +1,6 @@
 #include <emscripten.h>
 #include <emscripten/bind.h>
+#include <string>
 #include <AK/SoundEngine/Common/AkSoundEngineExport.h>
 #include <AK/SoundEngine/Common/AkNumeralTypes.h>
 #include <AK/SoundEngine/Platforms/POSIX/AkTypes.h>
@@ -24,6 +25,7 @@
 #include <AK/MusicEngine/Common/AkMusicEngine.h>
 #include <AK/SpatialAudio/Common/AkSpatialAudio.h>
 #include <AK/SpatialAudio/Common/AkReverbEstimation.h>
+#include <AK/Comm/AkCommunication.h>
 
 #include <AK/Plugin/AkOpusDecoderFactory.h>
 #include <AK/Plugin/AkVorbisDecoderFactory.h>
@@ -241,6 +243,29 @@ EMSCRIPTEN_BINDINGS(my_module) {
   register_vector<AkReal32>("vector<AkReal32>");
   register_vector<AK::SpeakerVolumes::VectorPtr>("vector<AK::SpeakerVolumes::VectorPtr>");
   register_vector<AkReflectionPathInfo>("vector<AkReflectionPathInfo>");
+
+  /**
+  * Comm
+  */
+
+#ifndef AK_OPTIMIZED
+  // Initialization
+  function("Comm_Init", optional_override([](const std::string& name, const std::string& url) {
+    AkCommSettings settings;
+    AK::Comm::GetDefaultInitSettings(settings);
+    strncpy(settings.szAppNetworkName, name.c_str(), sizeof(name));
+    strncpy(settings.szCommProxyServerUrl, url.c_str(), sizeof(url));
+    if (AK::Comm::Init(settings) != AK_Success) {
+      emscripten_run_script("console.error('Could not initialize communications.')");
+      return AK_Fail;
+    }
+    return AK_Success;
+  }));
+  // XXX: Not defined in Web build?
+  // function("Comm_GetLastError", &AK::Comm::GetLastError);
+  function("Comm_Term", &AK::Comm::Term);
+  function("Comm_Reset", &AK::Comm::Reset);
+#endif
 
   /**
   * MemoryMgr

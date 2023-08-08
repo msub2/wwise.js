@@ -9,7 +9,7 @@ debug:
 	include/SoundEngine/Common/AkMultipleFileLocation.cpp \
 	include/SoundEngine/Common/AkGeneratedSoundBanksResolver.cpp \
 	-Iinclude -Iinclude/SoundEngine/POSIX \
-	lib/Debug/libAkSoundEngine.a lib/Debug/libAkMemoryMgr.a \
+	lib/Debug/libAkSoundEngine.a lib/Debug/libCommunicationCentral.a lib/Debug/libAkMemoryMgr.a \
 	lib/Debug/libAkStreamMgr.a lib/Debug/libAkMusicEngine.a lib/Debug/libAkSpatialAudio.a \
 	lib/Debug/libAkVorbisDecoder.a lib/Debug/libAkOpusDecoder.a \
 	-s WASM_BIGINT -msse4.1 -msimd128 -fno-rtti -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0 -fPIC \
@@ -25,7 +25,7 @@ profile:
 	include/SoundEngine/Common/AkMultipleFileLocation.cpp \
 	include/SoundEngine/Common/AkGeneratedSoundBanksResolver.cpp \
 	-Iinclude -Iinclude/SoundEngine/POSIX \
-	lib/Profile/libAkSoundEngine.a lib/Profile/libAkMemoryMgr.a \
+	lib/Profile/libAkSoundEngine.a lib/Debug/libCommunicationCentral.a lib/Profile/libAkMemoryMgr.a \
 	lib/Profile/libAkStreamMgr.a lib/Profile/libAkMusicEngine.a lib/Profile/libAkSpatialAudio.a \
 	lib/Profile/libAkVorbisDecoder.a lib/Profile/libAkOpusDecoder.a \
 	-s WASM_BIGINT -msse4.1 -msimd128 -fno-rtti -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0 -fPIC \
