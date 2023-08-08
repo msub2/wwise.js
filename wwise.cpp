@@ -25,6 +25,7 @@
 #include <AK/SpatialAudio/Common/AkSpatialAudio.h>
 #include <AK/SpatialAudio/Common/AkReverbEstimation.h>
 
+#include <AK/Plugin/AkOpusDecoderFactory.h>
 #include <AK/Plugin/AkVorbisDecoderFactory.h>
 
 using namespace emscripten;
