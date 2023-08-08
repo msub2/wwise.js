@@ -3,7 +3,7 @@ all: debug profile release
 
 debug:
 	mkdir -p dist
-	emcc --bind -o dist/wwise.debug.js wwise.cpp \
+	emcc --post-js namespaces.js --bind -o dist/wwise.debug.js wwise.cpp \
 	include/SoundEngine/Common/AkFilePackageLUT.cpp \
 	include/SoundEngine/POSIX/AkDefaultIOHookBlocking.cpp \
 	include/SoundEngine/Common/AkMultipleFileLocation.cpp \
@@ -19,7 +19,7 @@ debug:
 
 profile:
 	mkdir -p dist
-	emcc --bind -o dist/wwise.profile.js wwise.cpp \
+	emcc --post-js namespaces.js --bind -o dist/wwise.profile.js wwise.cpp \
 	include/SoundEngine/Common/AkFilePackageLUT.cpp \
 	include/SoundEngine/POSIX/AkDefaultIOHookBlocking.cpp \
 	include/SoundEngine/Common/AkMultipleFileLocation.cpp \
@@ -35,7 +35,7 @@ profile:
 
 release:
 	mkdir -p dist
-	emcc --bind -o dist/wwise.js wwise.cpp \
+	emcc --post-js namespaces.js --bind -o dist/wwise.js wwise.cpp \
 	include/SoundEngine/Common/AkFilePackageLUT.cpp \
 	include/SoundEngine/POSIX/AkDefaultIOHookBlocking.cpp \
 	include/SoundEngine/Common/AkMultipleFileLocation.cpp \
