@@ -115,6 +115,16 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .value("FilePermissionError", AK_FilePermissionError) 	///< The file access permissions prevent opening a file.
     .value("UnknownFileError", AK_UnknownFileError)	///< Rare file error occured, as opposed to AK_FileNotFound or AK_FilePermissionError. This lumps all unrecognized OS file system errors.
   ;
+  enum_<Ak3DPositionType>("Ak3DPositionType")
+    .value("Emitter", AK_3DPositionType_Emitter)
+    .value("EmitterWithAutomation", AK_3DPositionType_EmitterWithAutomation)
+    .value("ListenerWithAutomation", AK_3DPositionType_ListenerWithAutomation)
+  ;
+  enum_<Ak3DSpatializationMode>("Ak3DSpatializationMode")
+    .value("None", Ak3DSpatializationMode::AK_SpatializationMode_None)
+    .value("PositionOnly", Ak3DSpatializationMode::AK_SpatializationMode_PositionOnly)
+    .value("PositionAndOrientation", Ak3DSpatializationMode::AK_SpatializationMode_PositionAndOrientation)
+  ;
   enum_<AK::AkChannelOrdering>("AkChannelOrdering")
     .value("Standard", AK::AkChannelOrdering::ChannelOrdering_Standard)
     .value("RunTime", AK::AkChannelOrdering::ChannelOrdering_RunTime)
@@ -181,10 +191,38 @@ EMSCRIPTEN_BINDINGS(my_module) {
     .function("HasCenter", &AkChannelConfig::HasCenter)
     // TODO: uNumChannels, eConfigType, uChannelMask
   ;
+  /// Object information structure for QueryAudioObjectsIDs
+  class_<AkObjectInfo>("AkObjectInfo")
+    .constructor<>()
+    .property("objID", &AkObjectInfo::objID)      ///< Object ID
+    .property("parentID", &AkObjectInfo::parentID)   ///< Object ID of the parent
+    .property("iDepth", &AkObjectInfo::iDepth)     ///< Depth in tree
+  ;
   class_<AkObstructionOcclusionValues>("AkObstructionOcclusionValues")
     .constructor<>()
     .property("occlusion", &AkObstructionOcclusionValues::occlusion)
     .property("obstruction", &AkObstructionOcclusionValues::obstruction)
+  ;
+  class_<AkPositioningInfo>("AkPositioningInfo")
+    .constructor<>()
+    .property("fCenterPct", &AkPositioningInfo::fCenterPct)         ///< Center % [0..1]
+    .property("pannerType", &AkPositioningInfo::pannerType)     ///< Speaker panning type: type of panning logic when object is not 3D spatialized.
+    .property("e3dPositioningType", &AkPositioningInfo::e3dPositioningType) ///< 3D position type: defines what acts as the emitter position for computing spatialization against the listener.
+    .property("bHoldEmitterPosAndOrient", &AkPositioningInfo::bHoldEmitterPosAndOrient)   ///< Hold emitter position and orientation values when starting playback.
+    .property("e3DSpatializationMode", &AkPositioningInfo::e3DSpatializationMode) ///< Spatialization mode
+    .property("bEnableAttenuation", &AkPositioningInfo::bEnableAttenuation) ///< Attenuation parameter set is active.
+    .property("bUseConeAttenuation", &AkPositioningInfo::bUseConeAttenuation) ///< Use the cone attenuation
+    .property("fInnerAngle", &AkPositioningInfo::fInnerAngle)        ///< Inner angle
+    .property("fOuterAngle", &AkPositioningInfo::fOuterAngle)        ///< Outer angle
+    .property("fConeMaxAttenuation", &AkPositioningInfo::fConeMaxAttenuation) ///< Cone max attenuation
+    .property("LPFCone", &AkPositioningInfo::LPFCone)            ///< Cone low pass filter value
+    .property("HPFCone", &AkPositioningInfo::HPFCone)            ///< Cone low pass filter value
+    .property("fMaxDistance", &AkPositioningInfo::fMaxDistance)       ///< Maximum distance
+    .property("fVolDryAtMaxDist", &AkPositioningInfo::fVolDryAtMaxDist)   ///< Volume dry at maximum distance
+    .property("fVolAuxGameDefAtMaxDist", &AkPositioningInfo::fVolAuxGameDefAtMaxDist)    ///< Volume wet at maximum distance (if any) (based on the Game defined distance attenuation)
+    .property("fVolAuxUserDefAtMaxDist", &AkPositioningInfo::fVolAuxUserDefAtMaxDist)    ///< Volume wet at maximum distance (if any) (based on the User defined distance attenuation)
+    .property("LPFValueAtMaxDist", &AkPositioningInfo::LPFValueAtMaxDist)  ///< Low pass filter value at max distance (if any)
+    .property("HPFValueAtMaxDist", &AkPositioningInfo::HPFValueAtMaxDist)  ///< High pass filter value at max distance (if any)
   ;
   class_<AkSegmentInfo>("AkSegmentInfo")
     .constructor<>()
@@ -243,6 +281,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
   register_vector<AkReal32>("vector<AkReal32>");
   register_vector<AK::SpeakerVolumes::VectorPtr>("vector<AK::SpeakerVolumes::VectorPtr>");
   register_vector<AkReflectionPathInfo>("vector<AkReflectionPathInfo>");
+  register_vector<AkPlayingID>("vector<AkPlayingID>");
+  register_vector<AkObjectInfo>("vector<AkObjectInfo>");
 
   /**
   * Comm
@@ -690,7 +730,85 @@ EMSCRIPTEN_BINDINGS(my_module) {
   }));
 
   // Environments
-  // TODO: Fill out more after figuring out outvalue binding issue
+  // XXX: The docs on what this actually does aren't super clear, omitting for now
+  // function("SoundEngine_Query_GetGameObjectAuxSendValues", &AK::SoundEngine::Query::GetGameObjectAuxSendValues);
+  function("SoundEngine_Query_GetGameObjectDryLevelValue", optional_override([](AkGameObjectID in_EmitterID, AkGameObjectID in_ListenerID, val out_rfControlValue) {
+    AkReal32 controlValue;
+    AKRESULT result = AK::SoundEngine::Query::GetGameObjectDryLevelValue(in_EmitterID, in_ListenerID, controlValue);
+    if (result == AK_Success) {
+      out_rfControlValue.set("val", val(controlValue));
+    }
+    return result;
+  }));
+  function("SoundEngine_Query_GetObjectObstructionAndOcclusion", optional_override([](AkGameObjectID in_EmitterID, AkGameObjectID in_ListenerID, val out_rfObstructionLevel, val out_rfOcclusionLevel) {
+    AkReal32 obstructionLevel;
+    AkReal32 occlusionLevel;
+    AKRESULT result = AK::SoundEngine::Query::GetObjectObstructionAndOcclusion(in_EmitterID, in_ListenerID, obstructionLevel, occlusionLevel);
+    if (result == AK_Success) {
+      out_rfObstructionLevel.set("val", val(obstructionLevel));
+      out_rfOcclusionLevel.set("val", val(occlusionLevel));
+    }
+    return result;
+  }));
+  function("SoundEngine_Query_QueryAudioObjectIDs", optional_override([](const std::string& in_pszEventName, val out_aObjectInfos) {
+    AkUInt32 numItems = 0;
+    AK::SoundEngine::Query::QueryAudioObjectIDs(in_pszEventName.c_str(), numItems, nullptr);
+    std::vector<AkObjectInfo> objectInfos(numItems);
+    AKRESULT result = AK::SoundEngine::Query::QueryAudioObjectIDs(in_pszEventName.c_str(), numItems, objectInfos.data());
+    if (result == AK_Success) {
+      out_aObjectInfos.set("val", val(objectInfos));
+    }
+    return result;
+  }));
+  function("SoundEngine_Query_GetPositioningInfo", optional_override([](AkUniqueID in_ObjectID, val out_rPositioningInfo) {
+    AkPositioningInfo positioningInfo;
+    AKRESULT result = AK::SoundEngine::Query::GetPositioningInfo(in_ObjectID, positioningInfo);
+    if (result == AK_Success) {
+      out_rPositioningInfo.set("val", val(positioningInfo));
+    }
+    return result;
+  }));
+  // TODO: Figure out how to bind AkGameObjectsList
+  // function("SoundEngine_Query_GetActiveGameObjects", optional_override([](val io_GameObjectList) {
+  //   AK::SoundEngine::Query::AkGameObjectsList list;
+  //   AKRESULT result = AK::SoundEngine::Query::GetActiveGameObjects(list);
+  //   if (result == AK_Success) {
+  //     io_GameObjectList.set("val", val(list));
+  //   }
+  //   return result;
+  // }));
+  function("SoundEngine_Query_GetIsGameObjectActive", &AK::SoundEngine::Query::GetIsGameObjectActive);
+  // TODO: Figure out how to bind AkRadiusList
+  // function("SoundEngine_Query_GetMaxRadius", &AK::SoundEngine::Query::GetMaxRadius);
+  function("SoundEngine_Query_GetMaxRadius", select_overload<AkReal32(AkGameObjectID)>(&AK::SoundEngine::Query::GetMaxRadius));
+  function("SoundEngine_Query_GetEventIDFromPlayingID", &AK::SoundEngine::Query::GetEventIDFromPlayingID);
+  function("SoundEngine_Query_GetGameObjectFromPlayingID", &AK::SoundEngine::Query::GetGameObjectFromPlayingID);
+  function("SoundEngine_Query_GetPlayingIDsFromGameObject", optional_override([](AkGameObjectID in_GameObjId, val out_aPlayingIDs) {
+    AkUInt32 numIDs = 0;
+    AK::SoundEngine::Query::GetPlayingIDsFromGameObject(in_GameObjId, numIDs, nullptr);
+    std::vector<AkPlayingID> playingIDs(numIDs);
+    AKRESULT result = AK::SoundEngine::Query::GetPlayingIDsFromGameObject(in_GameObjId, numIDs, playingIDs.data());
+    if (result == AK_Success) {
+      out_aPlayingIDs.set("val", val(playingIDs));
+    }
+    return result;
+  }));
+  function("SoundEngine_Query_GetCustomPropertyValueInt", optional_override([](AkUniqueID in_ObjectID, AkUInt32 in_uPropID, val out_iValue) {
+    AkInt32 value;
+    AKRESULT result = AK::SoundEngine::Query::GetCustomPropertyValue(in_ObjectID, in_uPropID, value);
+    if (result == AK_Success) {
+      out_iValue.set("val", val(value));
+    }
+    return result;
+  }));
+  function("SoundEngine_Query_GetCustomPropertyValueFloat", optional_override([](AkUniqueID in_ObjectID, AkUInt32 in_uPropID, val out_fValue) {
+    AkReal32 value;
+    AKRESULT result = AK::SoundEngine::Query::GetCustomPropertyValue(in_ObjectID, in_uPropID, value);
+    if (result == AK_Success) {
+      out_fValue.set("val", val(value));
+    }
+    return result;
+  }));
 
   /**
   * SpatialAudio
