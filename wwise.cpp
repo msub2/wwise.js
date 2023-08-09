@@ -161,6 +161,17 @@ EMSCRIPTEN_BINDINGS(my_module) {
   ;
 
   // Structs
+  class_<AkAcousticTexture>("AkAcousticTexture")
+    .constructor<>()
+    .constructor<AkUInt32, AkReal32, AkReal32, AkReal32, AkReal32, AkReal32, AkReal32>()
+    .property("ID", &AkAcousticTexture::ID)
+    .property("fAbsorptionOffset", &AkAcousticTexture::fAbsorptionOffset)
+    .property("fAbsorptionLow", &AkAcousticTexture::fAbsorptionLow)
+    .property("fAbsorptionMidLow", &AkAcousticTexture::fAbsorptionMidLow)
+    .property("fAbsorptionMidHigh", &AkAcousticTexture::fAbsorptionMidHigh)
+    .property("fAbsorptionHigh", &AkAcousticTexture::fAbsorptionHigh)
+    .property("fScattering", &AkAcousticTexture::fScattering)
+  ;
   class_<AkAudioSettings>("AkAudioSettings")
     .constructor<>()
     .property("uNumSamplesPerFrame", &AkAudioSettings::uNumSamplesPerFrame)
@@ -283,6 +294,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
   register_vector<AkReflectionPathInfo>("vector<AkReflectionPathInfo>");
   register_vector<AkPlayingID>("vector<AkPlayingID>");
   register_vector<AkObjectInfo>("vector<AkObjectInfo>");
+  register_vector<AkAcousticTexture>("vector<AkAcousticTexture>");
 
   /**
   * Comm
@@ -599,7 +611,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
   // function("SoundEngine_PrepareBank", &AK::SoundEngine::PrepareBank);
   function("SoundEngine_ClearPreparedEvents", &AK::SoundEngine::ClearPreparedEvents);
   // TODO: Double check how to bind string arrays
-  // function("SoundEngine_PrepareEvent", optional_override([](PreparationType in_PreparationType, const char** in_ppszString, AkUInt32 in_uNumEvent) {
+  // function("SoundEngine_PrepareEvent", optional_override([](AK::SoundEngine::PreparationType in_PreparationType, const char** in_ppszString, AkUInt32 in_uNumEvent) {
   //   AkBankID id;
   //   return AK::SoundEngine::PrepareEvent();
   // }));
@@ -897,8 +909,12 @@ EMSCRIPTEN_BINDINGS(my_module) {
   */
 
   function("SpatialAudio_ReverbEstimation_CalculateSlope", &AK::SpatialAudio::ReverbEstimation::CalculateSlope);
-  // FIXME: Figure out how to bind input arrays
-  // function("GetAverageAbsorptionValues", &AK::SpatialAudio::ReverbEstimation::GetAverageAbsorptionValues, allow_raw_pointers());
+  function("GetAverageAbsorptionValues", optional_override([](std::vector<AkAcousticTexture> in_textures, std::vector<float> in_surfaceAreas, int in_numTextures, val out_average) {
+    AkAcousticTexture average;
+    AK::SpatialAudio::ReverbEstimation::GetAverageAbsorptionValues(in_textures.data(), in_surfaceAreas.data(), in_numTextures, average);
+    out_average.set("val", val(average));
+    return;
+  }));
   function("SpatialAudio_ReverbEstimation_EstimateT60Decay", optional_override([](AkReal32 in_volumeCubicMeters, AkReal32 in_surfaceAreaSquaredMeters, AkReal32 in_environmentAverageAbsorption, val out_decayEstimate) {
     AkReal32 decayEstimate;
     AKRESULT result = AK::SpatialAudio::ReverbEstimation::EstimateT60Decay(in_volumeCubicMeters, in_surfaceAreaSquaredMeters, in_environmentAverageAbsorption, decayEstimate);
@@ -915,8 +931,12 @@ EMSCRIPTEN_BINDINGS(my_module) {
     }
     return result;
   }));
-  // FIXME: Figure out how to bind input arrays
-  // function("SpatialAudio_ReverbEstimation_EstimateHFDamping", &AK::SpatialAudio::ReverbEstimation::EstimateHFDamping, allow_raw_pointers());
+  function("SpatialAudio_ReverbEstimation_EstimateHFDamping", optional_override([](std::vector<AkAcousticTexture> in_textures, std::vector<float> in_surfaceAreas, int in_numTextures, val out_hfDamping) {
+    AkReal32 hfDamping;
+    AK::SpatialAudio::ReverbEstimation::EstimateHFDamping(in_textures.data(), in_surfaceAreas.data(), in_numTextures, hfDamping);
+    out_hfDamping.set("val", val(hfDamping));
+    return;
+  }));
 
   /**
   * StreamMgr
